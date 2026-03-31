@@ -1,0 +1,179 @@
+{
+  "database": "ICSKG-BR Master Municipal Database",
+  "version": "1.0",
+  "created": "2026-03-28T08:18:06.578592",
+  "n_municipalities": 5571,
+  "n_columns": 23,
+  "columns": {
+    "cod_ibge": {
+      "dtype": "object",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "cod_ibge_6": {
+      "dtype": "object",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "nome_municipio": {
+      "dtype": "object",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "uf_sigla": {
+      "dtype": "object",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "uf_nome": {
+      "dtype": "object",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "uf_id": {
+      "dtype": "object",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "regiao": {
+      "dtype": "object",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "mesorregiao": {
+      "dtype": "object",
+      "non_null": 5570,
+      "pct_complete": 100.0
+    },
+    "microrregiao": {
+      "dtype": "object",
+      "non_null": 5570,
+      "pct_complete": 100.0
+    },
+    "lat": {
+      "dtype": "float64",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "lon": {
+      "dtype": "float64",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "capital": {
+      "dtype": "int64",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "gdp_per_capita_brl": {
+      "dtype": "float64",
+      "non_null": 5570,
+      "pct_complete": 100.0
+    },
+    "gdp_year": {
+      "dtype": "object",
+      "non_null": 5570,
+      "pct_complete": 100.0
+    },
+    "area_km2": {
+      "dtype": "float64",
+      "non_null": 5539,
+      "pct_complete": 99.4
+    },
+    "econ_sector_1": {
+      "dtype": "object",
+      "non_null": 5534,
+      "pct_complete": 99.3
+    },
+    "econ_sector_2": {
+      "dtype": "object",
+      "non_null": 5534,
+      "pct_complete": 99.3
+    },
+    "econ_sector_3": {
+      "dtype": "object",
+      "non_null": 5534,
+      "pct_complete": 99.3
+    },
+    "has_bellwether_local": {
+      "dtype": "bool",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "dist_nearest_bellwether_km": {
+      "dtype": "float64",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "bellwether_count_50km": {
+      "dtype": "int64",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "bellwether_count_100km": {
+      "dtype": "int64",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    },
+    "access_2hr_proxy": {
+      "dtype": "int64",
+      "non_null": 5571,
+      "pct_complete": 100.0
+    }
+  },
+  "sources": {
+    "municipality_master": {
+      "url": "https://servicodados.ibge.gov.br/api/v1/localidades/municipios",
+      "description": "IBGE Localidades API \u2014 municipality names, UF, region",
+      "license": "Open"
+    },
+    "coordinates": {
+      "url": "https://github.com/kelvins/municipios-brasileiros",
+      "description": "Municipality centroids (lat/lon) from IBGE",
+      "license": "MIT"
+    },
+    "population": {
+      "url": "https://apisidra.ibge.gov.br/values/t/6579",
+      "description": "IBGE SIDRA Table 6579 \u2014 Population estimates",
+      "license": "Open"
+    },
+    "gdp_per_capita": {
+      "url": "https://apisidra.ibge.gov.br/values/t/5938",
+      "description": "IBGE SIDRA Table 5938 \u2014 GDP per capita",
+      "license": "Open"
+    },
+    "lcogs1_geospatial": {
+      "url": "https://apidadosabertos.saude.gov.br/cnes/estabelecimentos",
+      "description": "CNES/DATASUS API \u2014 bellwether hospitals + IBGE coordinates",
+      "method": "Haversine distance from municipality centroid to nearest bellwether-capable hospital",
+      "license": "Open"
+    },
+    "cimi_base": {
+      "description": "CIMI-INDEX.xlsx \u2014 area, GDP, economic sectors (from user-provided file)"
+    },
+    "atlas_brasil": {
+      "url": "https://atlasbrasil.org.br",
+      "description": "UNDP/IPEA/FJP Atlas do Desenvolvimento Humano \u2014 Municipal HDI",
+      "note": "Requires manual download if API fails"
+    },
+    "NOT_YET_EXTRACTED": {
+      "DATASUS_SIH": "Surgical volume + POMR \u2014 requires PySUS (pip install pysus) for FTP download of AIH files",
+      "DATASUS_CNES_workforce": "SAO density \u2014 requires PySUS for professional files (PF)",
+      "ANATEL": "Broadband/mobile \u2014 large files at dados.anatel.gov.br, recommend separate download",
+      "FIRJAN_IFDM": "Municipal development index \u2014 download XLSX from firjan.com.br/ifdm/downloads/",
+      "SNIS": "Sanitation \u2014 download from app4.mdr.gov.br/serieHistorica/",
+      "RAIS": "Employment \u2014 download from bi.mte.gov.br or basedosdados.org",
+      "INEP": "Education \u2014 download from inep.gov.br",
+      "PCDaS_POLIS": "Health + governance \u2014 access at pcdas.icict.fiocruz.br",
+      "RCSC": "Smart Cities Ranking \u2014 request from Urban Systems or extract from PDF reports",
+      "IDSC_BR": "SDG Index \u2014 access at idsc.cidadessustentaveis.org.br"
+    }
+  },
+  "reproduction": "Run: python3 database/build_database.py",
+  "references": [
+    "Meara JG et al. Global Surgery 2030. Lancet 2015;386:569-624.",
+    "Massenburg BB et al. BMJ Glob Health 2017;2:e000226.",
+    "Trindade BO et al. World J Surg 2023;47:1-8.",
+    "IESE Business School. Cities in Motion Index 2024. ST-649-E."
+  ]
+}
