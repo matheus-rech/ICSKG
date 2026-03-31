@@ -337,7 +337,11 @@ def main(argv=None):
         rates_df[available_gap_cols].to_csv(rates_path, index=False)
         logger.info("Bellwether rates saved to %s", rates_path)
 
-        gap_df = rates_df[rates_df["lcogs1_gap"].notna()].sort_values("lcogs1_gap", ascending=False)
+        if "lcogs1_gap" in rates_df.columns:
+            gap_df = rates_df[rates_df["lcogs1_gap"].notna()].sort_values("lcogs1_gap", ascending=False)
+            gap_path = out_dir / "lcogs1_bellwether_gap.csv"
+            gap_df[available_gap_cols].to_csv(gap_path, index=False)
+            logger.info("Gap analysis saved to %s", gap_path)
         gap_path = out_dir / "lcogs1_bellwether_gap.csv"
         gap_df[available_gap_cols].to_csv(gap_path, index=False)
         logger.info("Gap analysis saved to %s", gap_path)
