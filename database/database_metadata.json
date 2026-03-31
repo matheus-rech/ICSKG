@@ -1,0 +1,141 @@
+{
+  "project": "ICSKG-BR",
+  "version": "2.0",
+  "description": "Composite Index of Municipal Infrastructure for Health Knowledge Gap in Brazil",
+  "year_range": [2013, 2024],
+  "n_municipalities": 5570,
+  "n_dimensions": 9,
+  "dimensions": [
+    {
+      "key": "D1_fiscal_governance",
+      "label": "Fiscal Governance (IFGF)",
+      "source": "FIRJAN/IFGF",
+      "weight": 1.0,
+      "description": "Average of IFGF sub-indices: revenue, expenditure, investment, liquidity",
+      "normalisation": "min-max [0,1]",
+      "higher_is_better": true
+    },
+    {
+      "key": "D2_health_expenditure",
+      "label": "Per-capita health expenditure",
+      "source": "SIOPS/IBGE",
+      "weight": 1.0,
+      "description": "Municipal health expenditure per inhabitant (BRL, deflated to 2023 prices)",
+      "normalisation": "min-max [0,1]",
+      "higher_is_better": true
+    },
+    {
+      "key": "D3_hospital_capacity",
+      "label": "Inpatient beds per 10 000",
+      "source": "CNES/DATASUS",
+      "weight": 1.0,
+      "description": "SUS and non-SUS inpatient beds per 10 000 inhabitants",
+      "normalisation": "min-max [0,1]",
+      "higher_is_better": true
+    },
+    {
+      "key": "D4_human_resources",
+      "label": "Physicians and nurses per 10 000",
+      "source": "CNES/DATASUS",
+      "weight": 1.0,
+      "description": "Active physicians + nurses per 10 000 inhabitants",
+      "normalisation": "min-max [0,1]",
+      "higher_is_better": true
+    },
+    {
+      "key": "D5_primary_care_coverage",
+      "label": "Primary-care coverage index",
+      "source": "PMAQ/Previne Brasil",
+      "weight": 1.0,
+      "description": "Coverage score from national primary-care evaluation programmes",
+      "normalisation": "min-max [0,1]",
+      "higher_is_better": true
+    },
+    {
+      "key": "D6_private_coverage",
+      "label": "ANS private-coverage share",
+      "source": "ANS/IBGE",
+      "weight": 1.0,
+      "description": "Share of municipal population with supplementary private health plan",
+      "normalisation": "min-max [0,1]",
+      "higher_is_better": true
+    },
+    {
+      "key": "D7_maternal_child_health",
+      "label": "Maternal-child health composite",
+      "source": "SIM/SINASC",
+      "weight": 1.0,
+      "description": "Composite of infant mortality rate (inverted) and prenatal care coverage",
+      "normalisation": "min-max [0,1]",
+      "higher_is_better": true
+    },
+    {
+      "key": "D8_chronic_disease_burden",
+      "label": "ICSAP hospitalisation rate",
+      "source": "SIH/DATASUS",
+      "weight": 1.0,
+      "description": "Rate of hospitalisations for ambulatory-care-sensitive conditions (ICSAP list), inverted",
+      "normalisation": "min-max [0,1]",
+      "higher_is_better": false
+    },
+    {
+      "key": "D9_health_knowledge_gap",
+      "label": "ICSKG composite knowledge-gap score",
+      "source": "Multi-source",
+      "weight": 1.0,
+      "description": "Composite gap score across knowledge, access, and quality domains",
+      "normalisation": "min-max [0,1]",
+      "higher_is_better": false
+    }
+  ],
+  "data_sources": [
+    {
+      "id": "SIH",
+      "name": "Sistema de Informações Hospitalares",
+      "provider": "DATASUS/MS",
+      "url": "https://datasus.saude.gov.br/transferencia-de-arquivos/",
+      "format": "DBC (compressed DBF)",
+      "frequency": "monthly",
+      "years_available": "1992–present"
+    },
+    {
+      "id": "CNES",
+      "name": "Cadastro Nacional de Estabelecimentos de Saúde",
+      "provider": "DATASUS/MS",
+      "url": "https://datasus.saude.gov.br/transferencia-de-arquivos/",
+      "format": "DBC (compressed DBF)",
+      "frequency": "monthly",
+      "years_available": "2005–present"
+    },
+    {
+      "id": "ANS",
+      "name": "Agência Nacional de Saúde Suplementar – beneficiários",
+      "provider": "ANS/MS",
+      "url": "https://dados.ans.gov.br/",
+      "format": "CSV",
+      "frequency": "quarterly",
+      "years_available": "2000–present"
+    },
+    {
+      "id": "IFGF",
+      "name": "Índice FIRJAN de Gestão Fiscal",
+      "provider": "FIRJAN",
+      "url": "https://www.firjan.com.br/ifgf/",
+      "format": "XLSX",
+      "frequency": "annual",
+      "years_available": "2006–present"
+    },
+    {
+      "id": "SIOPS",
+      "name": "Sistema de Informações sobre Orçamentos Públicos em Saúde",
+      "provider": "MS",
+      "url": "https://siops.datasus.gov.br/",
+      "format": "CSV / API",
+      "frequency": "annual",
+      "years_available": "2000–present"
+    }
+  ],
+  "schema_version": "2.0",
+  "created": "2025-01-01",
+  "contact": "icskg-br@example.org"
+}
