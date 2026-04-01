@@ -38,7 +38,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Bootstrap Python 3.12 environment, pyproject.toml with pinned deps, config.yaml NAS path config
+- [x] 01-01-PLAN.md — Bootstrap Python 3.12 environment, pyproject.toml with pinned deps, config.yaml NAS path config
 - [ ] 01-02-PLAN.md — normalize_cod_ibge() utility, IBGE 2023 reference list (5,570 municipalities)
 - [ ] 01-03-PLAN.md — AMC temporal crosswalk for municipality boundary harmonization 2015-2023
 - [ ] 01-04-PLAN.md — Validation gate: schema checks, municipality code audit, range checks, quarantine
