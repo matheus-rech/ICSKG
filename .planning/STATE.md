@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-04-01T23:34:47.724Z"
+stopped_at: Completed 01-02 and 01-03 PLANs (Wave 2)
+last_updated: "2026-04-01T23:34:55.155Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 10
@@ -54,6 +54,7 @@ Progress: [███░░░░░░░] 25%
 *Updated after each plan completion*
 | Phase 01 P01 | 2min | 2 tasks | 7 files |
 | Phase 01 P02 | 2min | 2 tasks | 4 files |
+| Phase 01 P03 | 2min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Recent decisions affecting current work:
 - [Phase 01]: pyyaml>=6.0 added as 17th dependency for config.yaml loading
 - [Phase 01]: 6-digit IBGE codes zero-padded to 7 digits (not check-digit computed) -- zero-padding is safer than algorithmic check digit
 - [Phase 01]: NaN preserved via null_mask pattern in normalize_cod_ibge(), preventing silent 'nan' string corruption
+- [Phase 01]: Static CSV approach chosen for AMC crosswalk -- IBGE municipality list frozen since 2013, no network dependency needed
+- [Phase 01]: IBGE authoritative count is 5,571 municipalities (not 5,570) -- tests use dynamic count from reference CSV
 
 ### Pending Todos
 
@@ -85,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T23:34:47.721Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-04-01T23:34:55.152Z
+Stopped at: Completed Wave 2 (01-02 and 01-03)
 Resume file: None

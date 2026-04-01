@@ -12,7 +12,7 @@
 - [x] **FOUN-03**: IBGE reference list of 5,570 canonical municipality codes for join validation and completeness assertions
 - [ ] **FOUN-04**: Validation gate (schema checks, range checks, duplicate detection) that runs before any merge operation
 - [x] **FOUN-05**: pyproject.toml with all dependencies pinned (pandas 2.2.3, DuckDB 1.5.1, linearmodels 7.0, etc.)
-- [ ] **FOUN-06**: AMC temporal crosswalk for municipality boundary harmonization (2015-2023 splits/merges)
+- [x] **FOUN-06**: AMC temporal crosswalk for municipality boundary harmonization (2015-2023 splits/merges)
 
 ### Data Acquisition
 
@@ -116,7 +116,7 @@
 | FOUN-03 | Phase 1 | Complete |
 | FOUN-04 | Phase 1 | Pending |
 | FOUN-05 | Phase 1 | Complete |
-| FOUN-06 | Phase 1 | Pending |
+| FOUN-06 | Phase 1 | Complete |
 | DATA-01 | Phase 2 | Pending |
 | DATA-02 | Phase 2 | Pending |
 | DATA-03 | Phase 2 | Pending |
