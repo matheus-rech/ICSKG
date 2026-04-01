@@ -41,7 +41,7 @@ Plans:
 - [x] 01-01-PLAN.md — Bootstrap Python 3.12 environment, pyproject.toml with pinned deps, config.yaml NAS path config
 - [x] 01-02-PLAN.md — normalize_cod_ibge() utility, IBGE 2023 reference list (5,570 municipalities)
 - [x] 01-03-PLAN.md — AMC temporal crosswalk for municipality boundary harmonization 2015-2023
-- [ ] 01-04-PLAN.md — Validation gate: schema checks, municipality code audit, range checks, quarantine
+- [x] 01-04-PLAN.md — Validation gate: schema checks, municipality code audit, range checks, quarantine
 
 ### Phase 2: SIH & CNES Extraction
 **Goal**: The full 12-month annualized SIH surgical corpus and CNES professional/facility records are available as clean Parquet files, ready for municipality-year aggregation

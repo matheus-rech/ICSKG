@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-02 and 01-03 PLANs (Wave 2)
-last_updated: "2026-04-01T23:34:55.155Z"
+stopped_at: Completed 01-04-PLAN.md (validation gate)
+last_updated: "2026-04-01T23:40:57.241Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 10
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 4
   percent: 25
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 ## Current Position
 
 Phase: 1 of 10 (Foundation)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: Ready to execute
 Last activity: 2026-04-01
 
@@ -55,6 +55,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 01 P01 | 2min | 2 tasks | 7 files |
 | Phase 01 P02 | 2min | 2 tasks | 4 files |
 | Phase 01 P03 | 2min | 1 tasks | 3 files |
+| Phase 01 P04 | 2min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Recent decisions affecting current work:
 - [Phase 01]: NaN preserved via null_mask pattern in normalize_cod_ibge(), preventing silent 'nan' string corruption
 - [Phase 01]: Static CSV approach chosen for AMC crosswalk -- IBGE municipality list frozen since 2013, no network dependency needed
 - [Phase 01]: IBGE authoritative count is 5,571 municipalities (not 5,570) -- tests use dynamic count from reference CSV
+- [Phase 01]: Used datetime.now(timezone.utc) instead of deprecated datetime.utcnow() for Python 3.12 compatibility in validation gate
+- [Phase 01]: Lazy import of load_ibge_municipios inside validate_dataframe() to avoid circular dependency at module level
 
 ### Pending Todos
 
@@ -88,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T23:34:55.152Z
-Stopped at: Completed Wave 2 (01-02 and 01-03)
+Last session: 2026-04-01T23:40:57.238Z
+Stopped at: Completed 01-04-PLAN.md (validation gate)
 Resume file: None
