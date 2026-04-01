@@ -25,6 +25,8 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from database.validation import validate_dataframe
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
@@ -91,6 +93,80 @@ def _stage_banner(name: str) -> None:
     logger.info("─" * 60)
     logger.info("STAGE: %s", name.upper())
     logger.info("─" * 60)
+
+
+# ---------------------------------------------------------------------------
+# Validation helper
+# ---------------------------------------------------------------------------
+
+def _validate_stage_output(
+    path: Path,
+    source_name: str,
+    year: int,
+    quarantine_dir: Path | None = None,
+) -> Path:
+    """Load an extracted file, validate it, and write the clean version back.
+
+    Uses strict=False (quarantine mode) so that invalid rows are quarantined
+    rather than raising an exception.  Returns *path* unchanged (the file is
+    overwritten in-place with the clean DataFrame).
+
+    If the extracted file lacks required columns (cod_ibge, year) the
+    validation will quarantine the entire DataFrame and log a warning.
+    """
+    try:
+        import pandas as pd  # noqa: PLC0415
+    except ImportError:
+        logger.warning("pandas not available -- skipping validation for %s", source_name)
+        return path
+
+    if not path.exists():
+        logger.warning("Validation skipped for %s: file not found at %s", source_name, path)
+        return path
+
+    try:
+        if path.suffix == ".parquet":
+            df = pd.read_parquet(path)
+        elif path.suffix in (".xlsx", ".xls"):
+            df = pd.read_excel(path, dtype={"Cod_IBGE": str})
+        elif path.suffix == ".csv":
+            df = pd.read_csv(path, dtype=str)
+        else:
+            logger.warning("Validation skipped for %s: unsupported format %s", source_name, path.suffix)
+            return path
+
+        # Attempt column renaming so validation can find cod_ibge
+        from database.utils import rename_municipality_column  # noqa: PLC0415
+
+        try:
+            df = rename_municipality_column(df)
+        except ValueError:
+            logger.warning(
+                "Validation [%s]: no municipality code column found -- "
+                "validation will flag schema_conformance",
+                source_name,
+            )
+
+        # Ensure 'year' column exists for validation
+        if "year" not in df.columns:
+            df["year"] = year
+
+        clean_df, report = validate_dataframe(
+            df,
+            source_name=source_name,
+            strict=False,
+            quarantine_dir=quarantine_dir,
+        )
+        logger.info(
+            "Validation [%s]: %d/%d rows valid",
+            source_name,
+            report.n_valid,
+            report.n_rows_input,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Validation failed for %s: %s", source_name, exc)
+
+    return path
 
 
 # ---------------------------------------------------------------------------
@@ -247,6 +323,7 @@ def run_pipeline(
     data_dir: Path = Path("data_sources"),
     raw_dir: Path = Path("data_sources/raw"),
     processed_dir: Path = Path("data_sources/processed"),
+    quarantine_dir: Path = Path("data_sources/quarantine"),
     db_dir: Path = Path("database"),
     stages: list = None,
 ) -> None:
@@ -267,24 +344,32 @@ def run_pipeline(
     if "extract_sih" in stages:
         try:
             results["sih"] = extract_sih(year, month, raw_dir)
+            if results["sih"]:
+                _validate_stage_output(results["sih"], "sih", year, quarantine_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("extract_sih failed: %s", exc)
 
     if "extract_cnes" in stages:
         try:
             results["cnes"] = extract_cnes(year, month, raw_dir)
+            if results["cnes"]:
+                _validate_stage_output(results["cnes"], "cnes", year, quarantine_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("extract_cnes failed: %s", exc)
 
     if "extract_ans" in stages:
         try:
             results["ans"] = extract_ans(data_dir)
+            if results["ans"]:
+                _validate_stage_output(results["ans"], "ans", year, quarantine_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("extract_ans failed: %s", exc)
 
     if "extract_ifgf" in stages:
         try:
             results["ifgf"] = extract_ifgf(data_dir)
+            if results["ifgf"]:
+                _validate_stage_output(results["ifgf"], "ifgf", year, quarantine_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("extract_ifgf failed: %s", exc)
 
