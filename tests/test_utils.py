@@ -102,17 +102,17 @@ class TestRenameMunicipalityColumn:
 class TestLoadIbgeMunicipios:
     """Tests for load_ibge_municipios()."""
 
-    def test_loads_5570_rows(self):
+    def test_loads_5571_rows(self):
         if not IBGE_MUNICIPIOS_PATH.exists():
             pytest.skip("ibge_municipios_2023.csv not yet downloaded")
         ref = load_ibge_municipios()
-        assert len(ref) == 5570
+        assert len(ref) == 5571
 
     def test_no_duplicate_codes(self):
         if not IBGE_MUNICIPIOS_PATH.exists():
             pytest.skip("ibge_municipios_2023.csv not yet downloaded")
         ref = load_ibge_municipios()
-        assert ref["cod_ibge"].nunique() == 5570
+        assert ref["cod_ibge"].nunique() == 5571
 
     def test_all_codes_7_digits(self):
         if not IBGE_MUNICIPIOS_PATH.exists():

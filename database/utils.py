@@ -169,9 +169,10 @@ def load_ibge_municipios(path: Path | None = None) -> pd.DataFrame:
       - nome_municipio: Municipality name
       - uf            : 2-letter state code (e.g., "SP")
 
-    The returned DataFrame has 5,570 rows -- one per Brazilian municipality
-    as of the IBGE 2023 update. Use this as the authoritative join key
-    and completeness check for all panel assembly operations.
+    The returned DataFrame has 5,571 rows -- one per Brazilian municipality
+    as of the IBGE 2025 update (includes Boa Esperanca do Norte-MT, code
+    5101837, created after the 2023 reference). Use this as the authoritative
+    join key and completeness check for all panel assembly operations.
 
     Parameters
     ----------
@@ -192,11 +193,11 @@ def load_ibge_municipios(path: Path | None = None) -> pd.DataFrame:
             "Run Task 1 of Plan 01-02 to download ibge_municipios_2023.csv."
         )
     df = pd.read_csv(ref_path, dtype={"cod_ibge": str})
-    assert len(df) == 5570, (
-        f"IBGE reference list must have 5570 rows; got {len(df)}. "
+    assert len(df) == 5571, (
+        f"IBGE reference list must have 5571 rows; got {len(df)}. "
         f"The reference file at {ref_path} may be corrupted or incomplete."
     )
-    assert df["cod_ibge"].nunique() == 5570, (
+    assert df["cod_ibge"].nunique() == 5571, (
         "Duplicate cod_ibge values detected in IBGE reference list. "
         "Re-download ibge_municipios_2023.csv."
     )

@@ -14,9 +14,9 @@ class TestIbgeReferenceCsv:
     def test_file_exists(self):
         assert IBGE_CSV.exists(), f"IBGE reference CSV not found at {IBGE_CSV}"
 
-    def test_has_5570_rows(self):
+    def test_has_5571_rows(self):
         df = pd.read_csv(IBGE_CSV, dtype={"cod_ibge": str})
-        assert len(df) == 5570, f"Expected 5570 rows, got {len(df)}"
+        assert len(df) == 5571, f"Expected 5571 rows, got {len(df)}"
 
     def test_has_required_columns(self):
         df = pd.read_csv(IBGE_CSV, dtype={"cod_ibge": str}, nrows=1)
@@ -25,7 +25,7 @@ class TestIbgeReferenceCsv:
 
     def test_no_duplicate_cod_ibge(self):
         df = pd.read_csv(IBGE_CSV, dtype={"cod_ibge": str})
-        assert df["cod_ibge"].nunique() == 5570, "Duplicate cod_ibge values detected"
+        assert df["cod_ibge"].nunique() == 5571, "Duplicate cod_ibge values detected"
 
     def test_all_codes_7_digits(self):
         df = pd.read_csv(IBGE_CSV, dtype={"cod_ibge": str})
