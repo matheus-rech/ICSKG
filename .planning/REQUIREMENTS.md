@@ -8,8 +8,8 @@
 ### Foundation
 
 - [x] **FOUN-01**: Python 3.12 runtime with uv-managed environment and reproducible uv.lock lockfile
-- [ ] **FOUN-02**: Shared normalize_cod_ibge() utility that canonicalizes 6-digit and 7-digit IBGE municipality codes across all sources
-- [ ] **FOUN-03**: IBGE reference list of 5,570 canonical municipality codes for join validation and completeness assertions
+- [x] **FOUN-02**: Shared normalize_cod_ibge() utility that canonicalizes 6-digit and 7-digit IBGE municipality codes across all sources
+- [x] **FOUN-03**: IBGE reference list of 5,570 canonical municipality codes for join validation and completeness assertions
 - [ ] **FOUN-04**: Validation gate (schema checks, range checks, duplicate detection) that runs before any merge operation
 - [x] **FOUN-05**: pyproject.toml with all dependencies pinned (pandas 2.2.3, DuckDB 1.5.1, linearmodels 7.0, etc.)
 - [ ] **FOUN-06**: AMC temporal crosswalk for municipality boundary harmonization (2015-2023 splits/merges)
@@ -112,8 +112,8 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FOUN-01 | Phase 1 | Complete |
-| FOUN-02 | Phase 1 | Pending |
-| FOUN-03 | Phase 1 | Pending |
+| FOUN-02 | Phase 1 | Complete |
+| FOUN-03 | Phase 1 | Complete |
 | FOUN-04 | Phase 1 | Pending |
 | FOUN-05 | Phase 1 | Complete |
 | FOUN-06 | Phase 1 | Pending |
