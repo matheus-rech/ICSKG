@@ -33,6 +33,47 @@ logging.basicConfig(
 )
 
 # ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+
+def load_config(config_path: Path | None = None) -> dict:
+    """Load data path configuration from config.yaml.
+
+    Falls back to data_sources/ defaults if config.yaml is absent,
+    ensuring the project works for any researcher without a NAS mount.
+    """
+    if config_path is None:
+        config_path = Path(__file__).parent.parent / "config.yaml"
+    if not config_path.exists():
+        logger.info("config.yaml not found — using default paths (data_sources/)")
+        return {
+            "data_root": "data_sources",
+            "raw_dir": "raw",
+            "processed_dir": "processed",
+            "quarantine_dir": "quarantine",
+            "db_dir": "database",
+            "output_dir": "analysis/results",
+        }
+    try:
+        import yaml  # noqa: PLC0415
+        with config_path.open() as f:
+            cfg = yaml.safe_load(f)
+        logger.info("Loaded configuration from %s", config_path)
+        return cfg
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not load config.yaml: %s — using defaults", exc)
+        return {
+            "data_root": "data_sources",
+            "raw_dir": "raw",
+            "processed_dir": "processed",
+            "quarantine_dir": "quarantine",
+            "db_dir": "database",
+            "output_dir": "analysis/results",
+        }
+
+
+# ---------------------------------------------------------------------------
 # Stage definitions
 # ---------------------------------------------------------------------------
 
