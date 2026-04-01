@@ -274,14 +274,22 @@ def transform_merge(
         pd.DataFrame().to_parquet(output)
         return output
 
-    # Simple outer join on municipality code (cod_ibge / Cod_IBGE)
+    # Normalise municipality codes using shared utilities
+    from database.utils import rename_municipality_column, normalize_cod_ibge  # noqa: PLC0415
+
+    # Outer join on canonical municipality code (cod_ibge)
     merged = None
     for label, df in frames.items():
-        # Normalise municipality column name
-        for col in ("Cod_IBGE", "CD_MUNICIPIO", "cod_ibge"):
-            if col in df.columns:
-                df = df.rename(columns={col: "cod_ibge"})
-                break
+        # Rename source-specific column to canonical 'cod_ibge'
+        try:
+            df = rename_municipality_column(df)
+        except ValueError:
+            logger.warning(
+                "Source %s has no municipality code column – skipping.", label
+            )
+            continue
+        # Canonicalize to 7-digit zero-padded string
+        df["cod_ibge"] = normalize_cod_ibge(df["cod_ibge"])
         df = df.add_prefix(f"{label}_").rename(columns={f"{label}_cod_ibge": "cod_ibge"})
         merged = df if merged is None else merged.merge(df, on="cod_ibge", how="outer")
 
