@@ -434,8 +434,8 @@ def main(argv=None):
     group.add_argument("--start", metavar="YYYY-MM", help="Start of date range")
 
     parser.add_argument("--end", metavar="YYYY-MM", help="End of date range (required with --start)")
-    parser.add_argument("--data-dir", default="data_sources", help="Root data directory")
-    parser.add_argument("--db-dir", default="database", help="Database output directory")
+    parser.add_argument("--data-dir", default=None, help="Root data directory (overrides config.yaml)")
+    parser.add_argument("--db-dir", default=None, help="Database output directory (overrides config.yaml)")
     parser.add_argument(
         "--stages",
         nargs="+",
@@ -445,8 +445,20 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    data_dir = Path(args.data_dir)
-    db_dir = Path(args.db_dir)
+    # Load configuration from config.yaml (falls back to defaults)
+    cfg = load_config()
+    data_root = Path(cfg.get("data_root", "data_sources"))
+
+    # CLI arguments override config.yaml values
+    data_dir = Path(args.data_dir) if args.data_dir else data_root
+    raw_dir = data_dir / cfg.get("raw_dir", "raw")
+    processed_dir = data_dir / cfg.get("processed_dir", "processed")
+    quarantine_dir = data_dir / cfg.get("quarantine_dir", "quarantine")
+    db_dir = Path(args.db_dir) if args.db_dir else Path(cfg.get("db_dir", "database"))
+
+    logger.info("Data root: %s", data_dir)
+    logger.info("Raw: %s | Processed: %s | Quarantine: %s | DB: %s",
+                raw_dir, processed_dir, quarantine_dir, db_dir)
 
     if args.year_month:
         y, m = map(int, args.year_month.split("-"))
@@ -463,6 +475,9 @@ def main(argv=None):
             year=year,
             month=month,
             data_dir=data_dir,
+            raw_dir=raw_dir,
+            processed_dir=processed_dir,
+            quarantine_dir=quarantine_dir,
             db_dir=db_dir,
             stages=args.stages,
         )
