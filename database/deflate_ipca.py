@@ -1,9 +1,11 @@
 """
-ICSKG-BR IPCA Deflation Module
-================================
+ICSKG-BR IPCA Deflation and USD Conversion Module
+====================================================
 Fetches IPCA (Indice Nacional de Precos ao Consumidor Amplo) annual indices
 from IBGE SIDRA table 1737 and deflates monetary columns to a constant base
-year (default: 2023 BRL).
+year (default: 2023 BRL). Also provides BRL-to-USD conversion using BCB
+(Banco Central do Brasil) annual average exchange rates for international
+comparison.
 
 The general IPCA index is used (not the health sub-index) as the primary
 deflator, following the research recommendation that the health sub-index
@@ -15,18 +17,30 @@ Deflation formula:
     deflation_factor_y = ipca_index_dec_base / ipca_index_dec_y
     real_value_y = nominal_value_y * deflation_factor_y
 
+USD conversion:
+    value_usd = value_brl / exchange_rate_brl_per_usd
+    Exchange rate sourced from BCB SGS API series 3698 (PTAX selling rate).
+
 Exports
 -------
     fetch_ipca_annual_index(years, base_year) -> pd.DataFrame
     deflate_column(df, col, ipca_factors) -> pd.DataFrame
+    fetch_bcb_exchange_rate(base_year) -> float
+    convert_brl_to_usd(df, cols, exchange_rate) -> pd.DataFrame
 
 Usage
 -----
-    from database.deflate_ipca import fetch_ipca_annual_index, deflate_column
+    from database.deflate_ipca import (
+        fetch_ipca_annual_index, deflate_column,
+        fetch_bcb_exchange_rate, convert_brl_to_usd,
+    )
 
     factors_df = fetch_ipca_annual_index(years=range(2015, 2024), base_year=2023)
     factor_series = factors_df.set_index("year")["deflation_factor"]
     df = deflate_column(df, "gdp_per_capita", factor_series)
+
+    rate = fetch_bcb_exchange_rate(base_year=2023)
+    df = convert_brl_to_usd(df, ["gdp_per_capita", "total_cost_brl"], rate)
 """
 
 import logging
@@ -187,6 +201,134 @@ def deflate_column(
     logger.info(
         "deflate_column('%s'): %d values deflated, %d NaN preserved",
         col, n_deflated, n_nan,
+    )
+
+    return df
+
+
+# ---------------------------------------------------------------------------
+# USD Conversion
+# ---------------------------------------------------------------------------
+
+# Hardcoded fallback: average 2023 BRL/USD PTAX selling rate
+_FALLBACK_EXCHANGE_RATE_2023: float = 4.9942
+
+
+def fetch_bcb_exchange_rate(base_year: int = 2023) -> float:
+    """Fetch average annual BRL/USD exchange rate from BCB SGS API.
+
+    Uses series 3698 (PTAX selling rate, daily). Computes the annual average
+    of daily rates for the specified base_year. Falls back to a hardcoded
+    2023 average rate (4.9942) if the API is unavailable.
+
+    Parameters
+    ----------
+    base_year : int
+        Year for which to compute the average exchange rate.
+
+    Returns
+    -------
+    float
+        Average BRL per 1 USD for the base_year (e.g., 4.9942 for 2023).
+    """
+    url = (
+        "https://api.bcb.gov.br/dados/serie/bcdata.sgs.3698/dados"
+        "?formato=json"
+        "&dataInicial=01/01/%d&dataFinal=31/12/%d" % (base_year, base_year)
+    )
+
+    try:
+        import requests  # noqa: PLC0415
+
+        logger.info(
+            "Fetching BCB exchange rate (series 3698) for %d...", base_year
+        )
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+
+        if not data:
+            logger.warning(
+                "BCB SGS API returned no data for %d. "
+                "Using fallback rate %.4f.",
+                base_year, _FALLBACK_EXCHANGE_RATE_2023,
+            )
+            return _FALLBACK_EXCHANGE_RATE_2023
+
+        rates = [float(d["valor"]) for d in data if d.get("valor")]
+        if not rates:
+            logger.warning(
+                "No valid rates in BCB response for %d. "
+                "Using fallback rate %.4f.",
+                base_year, _FALLBACK_EXCHANGE_RATE_2023,
+            )
+            return _FALLBACK_EXCHANGE_RATE_2023
+
+        avg_rate = sum(rates) / len(rates)
+        logger.info(
+            "BCB exchange rate for %d: %.4f BRL/USD "
+            "(average of %d daily observations)",
+            base_year, avg_rate, len(rates),
+        )
+        return avg_rate
+
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "BCB SGS API unavailable: %s. "
+            "Using fallback 2023 exchange rate: %.4f BRL/USD",
+            exc, _FALLBACK_EXCHANGE_RATE_2023,
+        )
+        return _FALLBACK_EXCHANGE_RATE_2023
+
+
+def convert_brl_to_usd(
+    df: pd.DataFrame,
+    cols: list[str],
+    exchange_rate: float,
+) -> pd.DataFrame:
+    """Convert BRL monetary columns to USD using a fixed exchange rate.
+
+    For each column in *cols*, creates a new column named ``{col}_usd``
+    containing the value divided by the exchange rate. Original BRL columns
+    are preserved unchanged.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing monetary columns in BRL.
+    cols : list[str]
+        Column names to convert (e.g., ["gdp_per_capita", "total_cost_brl"]).
+    exchange_rate : float
+        BRL per 1 USD (e.g., 4.9942).
+
+    Returns
+    -------
+    pd.DataFrame
+        Copy of df with additional ``{col}_usd`` columns.
+    """
+    df = df.copy()
+
+    if exchange_rate <= 0:
+        logger.error(
+            "Invalid exchange rate: %.4f. USD conversion skipped.",
+            exchange_rate,
+        )
+        return df
+
+    converted = 0
+    for col in cols:
+        if col not in df.columns:
+            logger.warning(
+                "convert_brl_to_usd: column '%s' not found -- skipped", col
+            )
+            continue
+        usd_col = "%s_usd" % col
+        df[usd_col] = df[col] / exchange_rate
+        converted += 1
+
+    logger.info(
+        "convert_brl_to_usd: %d columns converted (rate=%.4f BRL/USD)",
+        converted, exchange_rate,
     )
 
     return df

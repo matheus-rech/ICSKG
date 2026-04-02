@@ -188,6 +188,8 @@ Plans:
 Plans:
 - [x] 09.1-01-PLAN.md — EconML causal inference (DML + Causal Forest) + PCA composite score
 - [ ] 09.1-02-PLAN.md — Age-standardized rates, health region aggregation, USD conversion
+- [ ] 09.1-01-PLAN.md — EconML causal inference (DML + Causal Forest) + PCA composite score
+- [x] 09.1-02-PLAN.md — Age-standardized rates, health region aggregation, USD conversion
 - [ ] 09.1-03-PLAN.md — CI/dispersion on all outputs + network distance metrics
 
 ### Phase 10: Publication Package

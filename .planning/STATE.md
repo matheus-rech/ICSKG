@@ -10,6 +10,10 @@ progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 20
+stopped_at: Completed 09.1-02-PLAN.md (age-standardization, health regions, USD conversion)
+last_updated: "2026-04-02T05:11:24.714Z"
+  completed_phases: 9
+  total_plans: 21
   completed_plans: 20
   percent: 93
 ---
@@ -74,6 +78,7 @@ Progress: [█████████░] 93%
 | Phase 09 P01 | 7min | 2 tasks | 4 files |
 >>>>>>> worktree-agent-a030292d
 | Phase 09.1 P01 | 3min | 2 tasks | 2 files |
+| Phase 09.1 P02 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -130,12 +135,14 @@ Recent decisions affecting current work:
 - [Phase 08]: Fixed hyperparameters (n_estimators=500, random_state=42) without grid search -- documented as defaults
 - [Phase 08]: numba>=0.60 and llvmlite>=0.43 pinned explicitly for Python 3.12 compatibility
 
-<<<<<<< HEAD
-
 - [Phase 09]: geobr pinned >=0.2 (not >=1.0) -- latest available is 0.2.2
 - [Phase 09]: Queen contiguity weights for Moran's I spatial autocorrelation (standard for areal data)
+<<<<<<< HEAD
 - [Phase 09.1]: LassoCV for DML nuisance models; CausalForestDML 500 trees for CATE
 - [Phase 09.1]: scipy>=1.13 added as missing dependency (used by compute_dimensions, run_regressions)
+- [Phase 09.1]: Direct age-standardization with Brazil national age structure as standard population
+- [Phase 09.1]: BCB SGS series 3698 for BRL/USD rate with 4.9942 hardcoded fallback
+- [Phase 09.1]: Health region crosswalk 3-tier fallback: CSV > DATASUS > microregion proxy
 
 ### Pending Todos
 
@@ -152,6 +159,8 @@ None yet.
 
 Last session: 2026-04-02T05:10:09.194Z
 Stopped at: Completed 09.1-01-PLAN.md (EconML causal inference + PCA composite)
+Last session: 2026-04-02T05:11:24.711Z
+Stopped at: Completed 09.1-02-PLAN.md (age-standardization, health regions, USD conversion)
 Last session: 2026-04-02T04:51:04.840Z
 Stopped at: Completed 09-01-PLAN.md (spatial analysis: Moran's I, choropleth, disparity, heatmaps, bivariate, patient flow)
 Last session: 2026-04-02T04:24:27.439Z
