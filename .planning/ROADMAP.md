@@ -163,7 +163,10 @@ Plans:
   2. CUDS choropleth map renders all 5,570 municipalities at 300 DPI minimum with a colorblind-safe diverging palette, state borders visible, and a legend
   3. Regional disparity analysis produces summary statistics (mean, median, IQR) for CUDS and each LCoGS indicator across all 5 macro-regions, saved as `results/tables/regional_disparity.csv`
   4. LCoGS indicator heatmaps by region show temporal trends (2015–2023) and are saved as publication-ready figures
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 09-01-PLAN.md — Moran's I spatial autocorrelation, CUDS choropleth, regional disparity analysis, LCoGS heatmaps
 
 ### Phase 10: Publication Package
 **Goal**: A complete, submission-ready BMJ Global Health package exists — all required figures, tables, compliance checklists, data dictionary, and a Zenodo-archived public release
@@ -194,5 +197,5 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 | 6. LCoGS Indicators | 0/1 | Not started | - |
 | 7. Statistical Analysis | 0/1 | Not started | - |
 | 8. Machine Learning Models | 1/1 | Complete   | 2026-04-02 |
-| 9. Spatial Analysis | 0/TBD | Not started | - |
+| 9. Spatial Analysis | 0/1 | Not started | - |
 | 10. Publication Package | 0/TBD | Not started | - |
