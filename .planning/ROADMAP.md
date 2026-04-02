@@ -71,7 +71,13 @@ Plans:
   3. FIRJAN IFGF Parquet contains all 5 sub-indices and IFGF Geral for 2015–2023 with ~420 MNAR municipalities per year present as NaN (not zero, not dropped)
   4. ANS beneficiary counts reflect a quarterly average (Q1–Q4 mean) rather than a December snapshot, for all years
   5. RENAVAM, SIOPS, and IBGE Census 2022 Parquet files exist with at least one full year of data and a format validation log noting any structural surprises discovered during parsing
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — IBGE SIDRA population estimates + GDP extraction with per-capita computation
+- [ ] 03-02-PLAN.md — IPEA IDHM cross-sectional extraction + FIRJAN IFGF Excel parser
+- [ ] 03-03-PLAN.md — ANS quarterly average beneficiaries + Census 2022 sanitation extraction
+- [ ] 03-04-PLAN.md — RENAVAM + SIOPS best-effort extraction + pipeline.py wiring for all secondary sources
 
 ### Phase 4: Panel Assembly & Validation
 **Goal**: A validated, deflated, imputed 50,130-row panel exists in SQLite with one row per municipality per year and a documented missingness profile
@@ -165,8 +171,8 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | - |
-| 2. SIH & CNES Extraction | 1/4 | In Progress|  |
-| 3. Secondary Source Extraction | 0/TBD | Not started | - |
+| 2. SIH & CNES Extraction | 4/4 | Complete |  |
+| 3. Secondary Source Extraction | 0/4 | Not started | - |
 | 4. Panel Assembly & Validation | 0/TBD | Not started | - |
 | 5. Dimension Computation & CUDS | 0/TBD | Not started | - |
 | 6. LCoGS Indicators | 0/TBD | Not started | - |
