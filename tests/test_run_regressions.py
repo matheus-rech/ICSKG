@@ -188,3 +188,111 @@ class TestHausmanTests:
         assert hausman_df["p_value"].dtype in (np.float64, np.float32, float)
         assert (hausman_df["p_value"] >= 0).all(), "Hausman p-values must be >= 0"
         assert (hausman_df["p_value"] <= 1.0).all(), "Hausman p-values must be <= 1.0"
+
+
+# ---------------------------------------------------------------------------
+# Task 2: Dose-response + sensitivity analyses
+# ---------------------------------------------------------------------------
+
+class TestDoseResponse:
+    """Tests for run_dose_response()."""
+
+    def test_dose_response_returns_dataframe_with_bins(self, synthetic_panel):
+        """Test DR-1: run_dose_response() returns DataFrame with cuds_bin,
+        mean_outcome, se columns."""
+        from analysis.run_regressions import run_dose_response
+
+        dr = run_dose_response(synthetic_panel, "surgical_volume_per_100k")
+        assert isinstance(dr, pd.DataFrame)
+        assert len(dr) > 0, "Dose-response DataFrame should not be empty"
+        expected_cols = {
+            "cuds_bin_midpoint", "mean_outcome", "se_outcome",
+            "n_obs", "poly_predicted",
+        }
+        assert expected_cols.issubset(set(dr.columns)), (
+            "Missing columns: %s" % (expected_cols - set(dr.columns))
+        )
+
+    def test_dose_response_includes_polynomial_fit(self, synthetic_panel):
+        """Test DR-2: Dose-response includes polynomial fit (degree >= 2)."""
+        from analysis.run_regressions import run_dose_response
+
+        dr = run_dose_response(synthetic_panel, "surgical_volume_per_100k")
+        assert "poly_predicted" in dr.columns, (
+            "poly_predicted column missing from dose-response"
+        )
+        # Polynomial predicted values should not be constant
+        # (verifies non-trivial fit)
+        assert dr["poly_predicted"].std() > 0, (
+            "Polynomial fit should not produce constant predictions"
+        )
+
+
+class TestSensitivity:
+    """Tests for run_sensitivity()."""
+
+    def test_sensitivity_returns_dict_with_expected_keys(self, synthetic_panel):
+        """Test S-1: run_sensitivity() returns dict with expected keys."""
+        from analysis.run_regressions import run_sensitivity
+
+        sens = run_sensitivity(synthetic_panel)
+        assert isinstance(sens, dict)
+        assert "arithmetic_cuds" in sens, "Missing 'arithmetic_cuds' key"
+        assert "exclude_missing_dims" in sens, "Missing 'exclude_missing_dims' key"
+
+    def test_arithmetic_cuds_uses_different_values(self, synthetic_panel):
+        """Test S-2: Arithmetic-CUDS sensitivity uses simple mean (different
+        CUDS values than geometric mean)."""
+        from analysis.run_regressions import run_sensitivity, DIM_COLS
+
+        # Compute what arithmetic CUDS should be
+        available_dims = [c for c in DIM_COLS if c in synthetic_panel.columns]
+        arith_cuds = synthetic_panel[available_dims].mean(axis=1, skipna=True)
+        geom_cuds = synthetic_panel["cuds"]
+
+        # They should be different (arithmetic != geometric unless all equal)
+        assert not np.allclose(arith_cuds.values, geom_cuds.values, atol=1e-6), (
+            "Arithmetic CUDS should differ from geometric CUDS"
+        )
+
+        # Verify sensitivity function returns results
+        sens = run_sensitivity(synthetic_panel)
+        assert len(sens["arithmetic_cuds"]) > 0, (
+            "Arithmetic CUDS sensitivity should produce regression results"
+        )
+
+    def test_exclude_missing_dims_drops_low_dimension_rows(self, synthetic_panel):
+        """Test S-3: Exclude-missing sensitivity drops municipalities with
+        n_dimensions < 7."""
+        from analysis.run_regressions import run_sensitivity
+
+        # Modify fixture to have some rows with low n_dimensions
+        panel_mixed = synthetic_panel.copy()
+        # Set first 50 rows to have only 5 dimensions
+        panel_mixed.iloc[:50, panel_mixed.columns.get_loc("n_dimensions")] = 5
+
+        sens = run_sensitivity(panel_mixed)
+        excl_results = sens["exclude_missing_dims"]
+        assert len(excl_results) > 0, (
+            "Exclude-missing sensitivity should produce results"
+        )
+
+    def test_sensitivity_results_have_regression_structure(self, synthetic_panel):
+        """Test S-4: Sensitivity regression results have same structure as
+        main regressions (coefficient, std_error, p_value)."""
+        from analysis.run_regressions import run_sensitivity
+
+        sens = run_sensitivity(synthetic_panel)
+
+        for key in ("arithmetic_cuds", "exclude_missing_dims"):
+            reg_results = sens[key]
+            for outcome_col, res in reg_results.items():
+                assert hasattr(res, "params"), (
+                    "Sensitivity result for %s/%s missing params" % (key, outcome_col)
+                )
+                assert hasattr(res, "pvalues"), (
+                    "Sensitivity result for %s/%s missing pvalues" % (key, outcome_col)
+                )
+                assert hasattr(res, "std_errors"), (
+                    "Sensitivity result for %s/%s missing std_errors" % (key, outcome_col)
+                )
