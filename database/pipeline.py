@@ -189,15 +189,59 @@ def extract_sih(year: int, month: int, raw_dir: Path) -> Path:
 
 
 def extract_cnes(year: int, month: int, raw_dir: Path) -> Path:
-    """Download CNES facility snapshot for the given year-month."""
-    _stage_banner("extract_cnes")
-    output = raw_dir / f"cnes_{year}{month:02d}.parquet"
-    logger.info("Extracting CNES %04d-%02d → %s", year, month, output)
-    # Delegated to continue_raw_download which handles both SIH and CNES
-    from scripts.continue_raw_download import download_month  # noqa: PLC0415
+    """Extract CNES facility and professional records.
 
-    download_month(source="CNES", year=year, month=month, output_path=output)
-    return output
+    Reads CNES ST (establishment) files from FIOCRUZ BigData ETLCNES CSVs
+    and writes facilities.parquet.  If CNES PF (professional) files are
+    available, also writes professionals.parquet.
+
+    Returns the processed CNES output directory.
+    """
+    _stage_banner("extract_cnes")
+    from scripts.cnes_extract import (  # noqa: PLC0415
+        extract_cnes_facilities,
+        extract_cnes_professionals,
+    )
+
+    cfg = load_config()
+    data_root = Path(cfg.get("data_root", "data_sources"))
+    processed_dir = data_root / cfg.get("processed_dir", "processed") / "cnes"
+    cnes_raw_dir = raw_dir / "cnes"
+
+    # ST facilities
+    logger.info("Extracting CNES facilities for %04d", year)
+    try:
+        fac_path = extract_cnes_facilities(
+            input_dir=cnes_raw_dir,
+            output_dir=processed_dir,
+            year=year,
+        )
+        logger.info("CNES facilities -> %s", fac_path)
+    except Exception as exc:  # noqa: BLE001
+        logger.error("CNES facility extraction failed: %s", exc)
+
+    # PF professionals (best-effort -- files may not be downloaded yet)
+    pf_dir = raw_dir / "cnes_pf"
+    if pf_dir.exists() and any(pf_dir.iterdir()):
+        logger.info("Extracting CNES professionals for %04d", year)
+        try:
+            prof_path = extract_cnes_professionals(
+                input_dir=pf_dir,
+                output_dir=processed_dir,
+                year=year,
+            )
+            logger.info("CNES professionals -> %s", prof_path)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("CNES professional extraction failed: %s", exc)
+    else:
+        logger.warning(
+            "CNES PF directory not found or empty at %s -- "
+            "professionals.parquet will not be generated. "
+            "Download PF files via: python scripts/cnes_extract.py --download-pf",
+            pf_dir,
+        )
+
+    return processed_dir
 
 
 def extract_ans(data_dir: Path) -> Path:
