@@ -135,7 +135,10 @@ Plans:
   3. Hausman test statistic and p-value for each regression outcome are logged to `results/hausman_test.csv`, confirming fixed-effects selection is justified (or documenting the exception if not)
   4. Dose-response analysis produces a non-linear CUDS-LCoGS curve for at least one outcome, showing the relationship is not assumed to be linear
   5. Sensitivity analysis results exist comparing arithmetic mean vs geometric mean CUDS, and a second sensitivity excluding municipalities with 2 or more missing dimensions — both stored in `results/sensitivity/`
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 07-01-PLAN.md — PanelOLS two-way FE regressions, cluster-robust SEs, Hausman test, dose-response, sensitivity analyses
 
 ### Phase 8: Machine Learning Models
 **Goal**: Random Forest and XGBoost dose-response models are trained, cross-validated, and interpreted with SHAP values, providing dimension-level feature importance for all 6 LCoGS outcomes
@@ -186,7 +189,7 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 | 4. Panel Assembly & Validation | 0/2 | Not started | - |
 | 5. Dimension Computation & CUDS | 0/1 | Not started | - |
 | 6. LCoGS Indicators | 0/1 | Not started | - |
-| 7. Statistical Analysis | 0/TBD | Not started | - |
+| 7. Statistical Analysis | 0/1 | Not started | - |
 | 8. Machine Learning Models | 0/TBD | Not started | - |
 | 9. Spatial Analysis | 0/TBD | Not started | - |
 | 10. Publication Package | 0/TBD | Not started | - |
