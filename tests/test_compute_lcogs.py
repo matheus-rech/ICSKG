@@ -353,3 +353,146 @@ class TestPersistLcogsIndicators:
             assert rows == 2
         finally:
             conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Integration test: full pipeline synthetic -> compute -> persist -> verify
+# ---------------------------------------------------------------------------
+
+class TestIntegrationLcogsSqlite:
+    """End-to-end integration test: synthetic data through full pipeline."""
+
+    def test_integration_lcogs_sqlite(self, tmp_path):
+        from analysis.compute_lcogs import (
+            compute_all_lcogs,
+            persist_lcogs_indicators,
+            seed_lcogs_metadata,
+        )
+        from database.build_database_v3 import create_schema
+
+        # Build synthetic panel: 10 municipalities x 2 years = 20 rows
+        n_mun = 10
+        years = [2020, 2021]
+        panel_rows = []
+        for yr in years:
+            for i in range(n_mun):
+                panel_rows.append({
+                    "cod_ibge": "%07d" % (3500000 + i),
+                    "year": yr,
+                    "populacao": 100_000 * (i + 1),
+                    "n_procedures": max(50 * (i + 1), 10),
+                    "n_deaths": 2 * (i + 1),
+                    "total_cost_brl": 500_000.0 * (i + 1),
+                    "gdp_per_capita": 40_000.0 + 5_000.0 * i,
+                })
+        panel = pd.DataFrame(panel_rows)
+
+        # Synthetic facilities: 3 bellwether in 3 different municipalities
+        facilities_df = pd.DataFrame({
+            "cnes": ["F001", "F002", "F003"],
+            "cod_ibge": ["3500000", "3500003", "3500007"],
+            "year": [2020, 2020, 2020],
+            "is_bellwether": [True, True, True],
+        })
+
+        # Synthetic professionals: 5 SAO across municipalities
+        professionals_df = pd.DataFrame({
+            "cnes": ["F001"] * 5,
+            "cod_ibge": [
+                "3500000", "3500000", "3500001", "3500003", "3500005",
+            ],
+            "year": [2020, 2020, 2020, 2020, 2020],
+            "cbo": ["225225", "225151", "225250", "225225", "225151"],
+            "cns_prof": ["P001", "P002", "P003", "P004", "P005"],
+            "sao_category": [
+                "surgeon", "anesthesiologist", "obstetrician",
+                "surgeon", "anesthesiologist",
+            ],
+        })
+
+        # Synthetic centroids for all 10 municipalities
+        centroids_df = pd.DataFrame({
+            "cod_ibge": ["%07d" % (3500000 + i) for i in range(n_mun)],
+            "lat": [-23.55 + 0.1 * i for i in range(n_mun)],
+            "lon": [-46.63 + 0.2 * i for i in range(n_mun)],
+        })
+
+        # Compute all LCoGS indicators
+        lcogs_df = compute_all_lcogs(
+            panel, facilities_df, professionals_df, centroids_df,
+        )
+
+        # Verify DataFrame shape
+        assert len(lcogs_df) == 20, (
+            "Expected 20 rows (10 mun x 2 years), got %d" % len(lcogs_df)
+        )
+
+        # Verify all 6 indicator columns present
+        expected_cols = {
+            "lcogs1_distance_km", "sao_per_100k",
+            "surgical_volume_per_100k", "pomr",
+            "financial_risk_ratio", "catastrophic_expenditure",
+        }
+        assert expected_cols.issubset(set(lcogs_df.columns))
+
+        # No municipality should have NaN for LCoGS-1 (all have centroids)
+        assert lcogs_df["lcogs1_distance_km"].isna().sum() == 0, (
+            "LCoGS-1 should have no NaN when all centroids are provided"
+        )
+
+        # Bellwether municipalities should have distance 0
+        bw_rows = lcogs_df[lcogs_df["cod_ibge"].isin(
+            ["3500000", "3500003", "3500007"]
+        )]
+        assert (bw_rows["lcogs1_distance_km"] == 0.0).all()
+
+        # Persist to SQLite
+        db_path = tmp_path / "integration_test.sqlite"
+        n_written = persist_lcogs_indicators(lcogs_df, db_path)
+        assert n_written == 20
+
+        # Verify SQLite tables
+        conn = sqlite3.connect(str(db_path))
+        try:
+            # lcogs_indicators: 20 rows
+            indicator_count = conn.execute(
+                "SELECT COUNT(*) FROM lcogs_indicators"
+            ).fetchone()[0]
+            assert indicator_count == 20, (
+                "Expected 20 lcogs_indicators rows, got %d" % indicator_count
+            )
+
+            # lcogs_metadata: 6 rows
+            meta_count = conn.execute(
+                "SELECT COUNT(*) FROM lcogs_metadata"
+            ).fetchone()[0]
+            assert meta_count == 6, (
+                "Expected 6 lcogs_metadata rows, got %d" % meta_count
+            )
+
+            # LCoGS-5 and LCoGS-6 metadata contain "ecological" caveat
+            for indicator in ["financial_risk_ratio", "catastrophic_expenditure"]:
+                caveat = conn.execute(
+                    "SELECT caveat FROM lcogs_metadata WHERE indicator = ?",
+                    (indicator,),
+                ).fetchone()
+                assert caveat is not None, (
+                    "Missing metadata for %s" % indicator
+                )
+                assert "ecological" in caveat[0].lower(), (
+                    "LCoGS-5/6 metadata must contain 'ecological' caveat, "
+                    "got: %s" % caveat[0]
+                )
+
+            # All 6 indicator columns present in table
+            cols_result = conn.execute(
+                "PRAGMA table_info(lcogs_indicators)"
+            ).fetchall()
+            col_names = {row[1] for row in cols_result}
+            assert expected_cols.issubset(col_names), (
+                "Missing columns in lcogs_indicators: %s"
+                % (expected_cols - col_names)
+            )
+
+        finally:
+            conn.close()
