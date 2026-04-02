@@ -207,6 +207,8 @@ Plans:
 Plans:
 - [ ] 10-01-PLAN.md — Publication-ready figures (CUDS temporal trend, regression forest plot) + 8 publication tables with CIs and BRL+USD
 - [ ] 10-02-PLAN.md — STROBE/RECORD checklists, data dictionary, ethics/data availability statements, Zenodo preparation
+- [x] 10-01-PLAN.md -- Publication figures (CUDS temporal trend, regression forest plot) and 8+ tables with CIs and BRL+USD
+- [ ] 10-02-PLAN.md -- STROBE/RECORD checklists, data dictionary, and Zenodo release preparation
 
 ## Progress
 
@@ -229,3 +231,4 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 | 9. Spatial Analysis | 1/1 | Complete   | 2026-04-02 |
 | 9.1 Methodology Enhancements | 3/3 | Complete   | 2026-04-02 |
 | 10. Publication Package | 0/2 | Not started | - |
+| 10. Publication Package | 1/2 | In progress | - |
