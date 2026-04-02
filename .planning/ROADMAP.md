@@ -149,7 +149,10 @@ Plans:
   2. 5-fold cross-validation is stratified by the 5 Brazilian macro-regions (Norte, Nordeste, Centro-Oeste, Sudeste, Sul), preventing geographic leakage between train and test sets
   3. SHAP beeswarm plots exist for each LCoGS outcome showing dimension-level feature importance, saved as 300 DPI PNG files in `results/figures/shap/`
   4. Model performance metrics (RMSE, R², MAE) for all cross-validation folds are saved to `results/ml_metrics.csv` and show consistent performance across folds without large variance
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 08-01-PLAN.md — RF + XGBoost training with region-stratified 5-fold CV, SHAP beeswarm plots, ml_metrics.csv
 
 ### Phase 9: Spatial Analysis
 **Goal**: Spatial autocorrelation of regression residuals is tested, and publication-ready choropleth and heatmap figures document the geographic distribution of CUDS and LCoGS indicators
@@ -190,6 +193,6 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 | 5. Dimension Computation & CUDS | 0/1 | Not started | - |
 | 6. LCoGS Indicators | 0/1 | Not started | - |
 | 7. Statistical Analysis | 0/1 | Not started | - |
-| 8. Machine Learning Models | 0/TBD | Not started | - |
+| 8. Machine Learning Models | 0/1 | Not started | - |
 | 9. Spatial Analysis | 0/TBD | Not started | - |
 | 10. Publication Package | 0/TBD | Not started | - |
