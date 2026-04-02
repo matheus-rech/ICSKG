@@ -108,7 +108,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 05-01-PLAN.md — 8 CIMI dimension scores, within-year min-max normalization, CUDS geometric mean, SQLite persistence
+- [x] 05-01-PLAN.md — 8 CIMI dimension scores, within-year min-max normalization, CUDS geometric mean, SQLite persistence
 
 ### Phase 6: LCoGS Indicators
 **Goal**: All 6 LCoGS surgical outcome indicators are computed at municipality-year level and loaded into SQLite, ready for regression analysis

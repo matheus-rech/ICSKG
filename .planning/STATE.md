@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 04-02-PLAN.md (IFGF imputation + SQLite v3 builder)
-last_updated: "2026-04-02T03:09:15.326Z"
+stopped_at: Completed 05-01-PLAN.md (dimension computation + CUDS)
+last_updated: "2026-04-02T03:38:51.480Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 10
-  completed_phases: 4
-  total_plans: 14
-  completed_plans: 14
+  completed_phases: 5
+  total_plans: 15
+  completed_plans: 15
   percent: 93
 ---
 
@@ -66,6 +66,7 @@ Progress: [█████████░] 93%
 | Phase 03 P04 | 7min | 3 tasks | 8 files |
 | Phase 04 P01 | 4min | 1 tasks | 4 files |
 | Phase 04 P02 | 6min | 2 tasks | 4 files |
+| Phase 05 P01 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -111,6 +112,8 @@ Recent decisions affecting current work:
 - [Phase 04]: IterativeImputer with BayesianRidge for IFGF MNAR imputation (m=5, sample_posterior=True, Rubin's rules pooling)
 - [Phase 04]: build_database_v3.py created (not v2 refactor) -- v3 is CIMI-aligned with 5-table schema
 - [Phase 04]: D8 International Projection excluded from 8-dimension CIMI metadata; D3/D5 flagged cross-sectional
+- [Phase 05]: D4 inverted AFTER min-max normalization (1 - normalized) so higher SUS dependence = lower score
+- [Phase 05]: CUDS uses geometric mean with epsilon=0.01 floor preventing zero collapse; missing dims excluded per-municipality
 
 ### Pending Todos
 
@@ -125,8 +128,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T03:09:15.323Z
-Stopped at: Completed 04-02-PLAN.md (IFGF imputation + SQLite v3 builder)
+Last session: 2026-04-02T03:38:51.471Z
+Stopped at: Completed 05-01-PLAN.md (dimension computation + CUDS)
 Last session: 2026-04-02T02:11:59.882Z
 Stopped at: Completed 03-02-PLAN.md
 Last session: 2026-04-02T02:10:44.742Z

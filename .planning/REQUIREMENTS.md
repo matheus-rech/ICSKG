@@ -47,10 +47,10 @@
 
 ### Dimension Computation
 
-- [ ] **DIMS-01**: 9 CIMI dimension scores computed from source data (D1-Governance through D9-Technology, excluding D8-International Projection)
-- [ ] **DIMS-02**: Min-max normalization within each year using groupby('year').transform()
-- [ ] **DIMS-03**: CUDS composite computed as geometric mean of normalized dimensions with floor offset (epsilon=0.01) to prevent zero collapse
-- [ ] **DIMS-04**: Cross-sectional dimensions (Census 2022 sanitation, IDHM) explicitly flagged as single-year with documentation
+- [x] **DIMS-01**: 9 CIMI dimension scores computed from source data (D1-Governance through D9-Technology, excluding D8-International Projection)
+- [x] **DIMS-02**: Min-max normalization within each year using groupby('year').transform()
+- [x] **DIMS-03**: CUDS composite computed as geometric mean of normalized dimensions with floor offset (epsilon=0.01) to prevent zero collapse
+- [x] **DIMS-04**: Cross-sectional dimensions (Census 2022 sanitation, IDHM) explicitly flagged as single-year with documentation
 
 ### LCoGS Indicators
 
@@ -151,10 +151,10 @@
 | PANL-04 | Phase 3 | Complete |
 | PANL-05 | Phase 3 | Complete |
 | PANL-06 | Phase 3 | Complete |
-| DIMS-01 | Phase 4 | Pending |
-| DIMS-02 | Phase 4 | Pending |
-| DIMS-03 | Phase 4 | Pending |
-| DIMS-04 | Phase 4 | Pending |
+| DIMS-01 | Phase 4 | Complete |
+| DIMS-02 | Phase 4 | Complete |
+| DIMS-03 | Phase 4 | Complete |
+| DIMS-04 | Phase 4 | Complete |
 | LCOG-01 | Phase 5 | Pending |
 | LCOG-02 | Phase 5 | Pending |
 | LCOG-03 | Phase 5 | Pending |
