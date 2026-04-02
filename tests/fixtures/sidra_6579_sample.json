@@ -1,0 +1,80 @@
+[
+  {
+    "NC": "Nivel Territorial (Codigo)",
+    "NN": "Nivel Territorial (Nome)",
+    "MC": "Unidade de Medida (Codigo)",
+    "MN": "Unidade de Medida (Nome)",
+    "V": "Valor",
+    "D1C": "Municipio (Codigo)",
+    "D1N": "Municipio (Nome)",
+    "D2C": "Variavel (Codigo)",
+    "D2N": "Variavel (Nome)",
+    "D3C": "Ano (Codigo)",
+    "D3N": "Ano (Nome)"
+  },
+  {
+    "NC": "6",
+    "NN": "Municipio",
+    "MC": "45",
+    "MN": "Pessoas",
+    "V": "12325232",
+    "D1C": "3550308",
+    "D1N": "Sao Paulo (SP)",
+    "D2C": "9324",
+    "D2N": "Populacao residente estimada",
+    "D3C": "2021",
+    "D3N": "2021"
+  },
+  {
+    "NC": "6",
+    "NN": "Municipio",
+    "MC": "45",
+    "MN": "Pessoas",
+    "V": "6775561",
+    "D1C": "3304557",
+    "D1N": "Rio de Janeiro (RJ)",
+    "D2C": "9324",
+    "D2N": "Populacao residente estimada",
+    "D3C": "2021",
+    "D3N": "2021"
+  },
+  {
+    "NC": "6",
+    "NN": "Municipio",
+    "MC": "45",
+    "MN": "Pessoas",
+    "V": "2523480",
+    "D1C": "3106200",
+    "D1N": "Belo Horizonte (MG)",
+    "D2C": "9324",
+    "D2N": "Populacao residente estimada",
+    "D3C": "2021",
+    "D3N": "2021"
+  },
+  {
+    "NC": "6",
+    "NN": "Municipio",
+    "MC": "45",
+    "MN": "Pessoas",
+    "V": "3094325",
+    "D1C": "4106902",
+    "D1N": "Curitiba (PR)",
+    "D2C": "9324",
+    "D2N": "Populacao residente estimada",
+    "D3C": "2021",
+    "D3N": "2021"
+  },
+  {
+    "NC": "6",
+    "NN": "Municipio",
+    "MC": "45",
+    "MN": "Pessoas",
+    "V": "1506460",
+    "D1C": "5300108",
+    "D1N": "Brasilia (DF)",
+    "D2C": "9324",
+    "D2N": "Populacao residente estimada",
+    "D3C": "2021",
+    "D3N": "2021"
+  }
+]

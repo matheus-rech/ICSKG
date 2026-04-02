@@ -1,0 +1,22 @@
+# Local machine configuration (contains NAS paths)
+config.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Generated data and databases
+data_sources/raw/
+data_sources/processed/
+data_sources/quarantine/
+database/icskg_br.sqlite
+database/icskg_br.duckdb
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
