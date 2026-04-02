@@ -8,6 +8,13 @@ all data sources required by the ICSKG-BR project:
   2. CNES (Cadastro Nacional de Estabelecimentos de Saúde) – facility registry
   3. ANS (Agência Nacional de Saúde Suplementar) – private-coverage beneficiaries
   4. IFGF (Índice FIRJAN de Gestão Fiscal) – municipal fiscal management scores
+  5. IBGE SIDRA – population estimates and GDP per capita
+  6. IPEA IDHM – Human Development Index by municipality
+  7. IFGF Parquet – FIRJAN IFGF Excel-to-Parquet standardisation
+  8. ANS Quarterly – quarterly average beneficiary counts
+  9. Census 2022 Sanitation – adequate sanitation and water supply %
+ 10. RENAVAM – vehicle fleet per municipality (BEST EFFORT)
+ 11. SIOPS – per-capita health expenditure (BEST EFFORT)
 
 The pipeline can be run for a single year-month or for the full historical
 window (2013–2024).
@@ -84,6 +91,16 @@ STAGES = [
     "extract_cnes",
     "extract_ans",
     "extract_ifgf",
+    # Phase 3 secondary sources
+    "extract_ibge_population",
+    "extract_ibge_gdp",
+    "extract_idhm",
+    "extract_ifgf_parquet",
+    "extract_ans_quarterly",
+    "extract_census_sanitation",
+    "extract_renavam",
+    "extract_siops",
+    # Merge and load
     "transform_merge",
     "load_database",
 ]
@@ -289,6 +306,155 @@ def extract_ifgf(data_dir: Path) -> Path:
 
 
 # ---------------------------------------------------------------------------
+# Phase 3: Secondary source extractors
+# ---------------------------------------------------------------------------
+
+def extract_ibge_population(
+    years: list[int],
+    processed_dir: Path,
+) -> Path:
+    """Extract IBGE SIDRA population estimates for the given years.
+
+    Lazy-imports scripts.extract_ibge_sidra.extract_population and writes
+    output to processed_dir / "ibge_sidra" / "population.parquet".
+    """
+    _stage_banner("extract_ibge_population")
+    from scripts.extract_ibge_sidra import extract_population  # noqa: PLC0415
+
+    output_dir = processed_dir / "ibge_sidra"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_population(years=years, output_dir=output_dir)
+    logger.info("IBGE population -> %s", path)
+    return path
+
+
+def extract_ibge_gdp(
+    years: list[int],
+    processed_dir: Path,
+    population_path: Path,
+) -> Path:
+    """Extract IBGE SIDRA GDP per capita for the given years.
+
+    Requires population_path for per-capita computation. Lazy-imports
+    scripts.extract_ibge_sidra.extract_gdp.
+    """
+    _stage_banner("extract_ibge_gdp")
+    from scripts.extract_ibge_sidra import extract_gdp  # noqa: PLC0415
+
+    output_dir = processed_dir / "ibge_sidra"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_gdp(
+        years=years,
+        output_dir=output_dir,
+        population_path=population_path,
+    )
+    logger.info("IBGE GDP -> %s", path)
+    return path
+
+
+def extract_idhm_source(processed_dir: Path) -> Path:
+    """Extract IPEA IDHM (2010 cross-sectional) for all municipalities.
+
+    Lazy-imports scripts.extract_ipea_idhm.extract_idhm.
+    """
+    _stage_banner("extract_idhm")
+    from scripts.extract_ipea_idhm import extract_idhm  # noqa: PLC0415
+
+    output_dir = processed_dir / "ipea_idhm"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_idhm(target_year=2010, output_dir=output_dir)
+    logger.info("IPEA IDHM -> %s", path)
+    return path
+
+
+def extract_ifgf_parquet(data_dir: Path, processed_dir: Path) -> Path:
+    """Extract FIRJAN IFGF from Excel and write standardised Parquet.
+
+    Lazy-imports scripts.extract_ifgf.extract_ifgf. This replaces the
+    old extract_ifgf() which only returned the Excel path. Both coexist.
+    """
+    _stage_banner("extract_ifgf_parquet")
+    from scripts.extract_ifgf import extract_ifgf as _extract_ifgf  # noqa: PLC0415
+
+    output_dir = processed_dir / "ifgf"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = _extract_ifgf(data_dir=data_dir, output_dir=output_dir)
+    logger.info("IFGF Parquet -> %s", path)
+    return path
+
+
+def extract_ans_quarterly_source(
+    years: list[int],
+    data_dir: Path,
+    processed_dir: Path,
+) -> Path:
+    """Extract ANS quarterly average beneficiary counts.
+
+    Lazy-imports scripts.extract_ans_quarterly.extract_ans_quarterly.
+    """
+    _stage_banner("extract_ans_quarterly")
+    from scripts.extract_ans_quarterly import extract_ans_quarterly  # noqa: PLC0415
+
+    raw_dir = data_dir / "raw" / "ANS"
+    output_dir = processed_dir / "ans"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_ans_quarterly(
+        years=years,
+        raw_dir=raw_dir,
+        output_dir=output_dir,
+    )
+    logger.info("ANS quarterly -> %s", path)
+    return path
+
+
+def extract_census_sanitation_source(processed_dir: Path) -> Path:
+    """Extract IBGE Census 2022 sanitation and water supply indicators.
+
+    Lazy-imports scripts.extract_census_sanitation.extract_sanitation.
+    """
+    _stage_banner("extract_census_sanitation")
+    from scripts.extract_census_sanitation import extract_sanitation  # noqa: PLC0415
+
+    output_dir = processed_dir / "census_sanitation"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_sanitation(output_dir=output_dir)
+    logger.info("Census sanitation -> %s", path)
+    return path
+
+
+def extract_renavam_source(years: list[int], processed_dir: Path) -> Path:
+    """Extract RENAVAM vehicle fleet data (BEST EFFORT).
+
+    Lazy-imports scripts.extract_renavam.extract_renavam. Failure does
+    not block the pipeline -- logs gap and writes empty schema Parquet.
+    """
+    _stage_banner("extract_renavam")
+    from scripts.extract_renavam import extract_renavam  # noqa: PLC0415
+
+    output_dir = processed_dir / "renavam"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_renavam(years=years, output_dir=output_dir)
+    logger.info("RENAVAM -> %s", path)
+    return path
+
+
+def extract_siops_source(years: list[int], processed_dir: Path) -> Path:
+    """Extract SIOPS per-capita health expenditure (BEST EFFORT).
+
+    Lazy-imports scripts.extract_siops.extract_siops. Failure does not
+    block the pipeline -- logs gap and writes empty schema Parquet.
+    """
+    _stage_banner("extract_siops")
+    from scripts.extract_siops import extract_siops  # noqa: PLC0415
+
+    output_dir = processed_dir / "siops"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_siops(years=years, output_dir=output_dir)
+    logger.info("SIOPS -> %s", path)
+    return path
+
+
+# ---------------------------------------------------------------------------
 # Transform / merge
 # ---------------------------------------------------------------------------
 
@@ -406,11 +572,22 @@ def run_pipeline(
     raw_dir.mkdir(parents=True, exist_ok=True)
     processed_dir.mkdir(parents=True, exist_ok=True)
 
+    # Default year range for annual extractors
+    years = list(range(2015, 2024))
+
     results: dict[str, Path | None] = {
         "sih": None,
         "cnes": None,
         "ans": None,
         "ifgf": None,
+        "ibge_population": None,
+        "ibge_gdp": None,
+        "idhm": None,
+        "ifgf_parquet": None,
+        "ans_quarterly": None,
+        "census_sanitation": None,
+        "renavam": None,
+        "siops": None,
     }
 
     if "extract_sih" in stages:
@@ -444,6 +621,63 @@ def run_pipeline(
                 _validate_stage_output(results["ifgf"], "ifgf", year, quarantine_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("extract_ifgf failed: %s", exc)
+
+    # --- Phase 3 secondary source stages ---
+
+    if "extract_ibge_population" in stages:
+        try:
+            results["ibge_population"] = extract_ibge_population(years, processed_dir)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_ibge_population failed: %s", exc)
+
+    if "extract_ibge_gdp" in stages:
+        try:
+            pop_path = results.get("ibge_population")
+            if pop_path is None:
+                pop_path = processed_dir / "ibge_sidra" / "population.parquet"
+            results["ibge_gdp"] = extract_ibge_gdp(years, processed_dir, pop_path)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_ibge_gdp failed: %s", exc)
+
+    if "extract_idhm" in stages:
+        try:
+            results["idhm"] = extract_idhm_source(processed_dir)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_idhm failed: %s", exc)
+
+    if "extract_ifgf_parquet" in stages:
+        try:
+            results["ifgf_parquet"] = extract_ifgf_parquet(data_dir, processed_dir)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_ifgf_parquet failed: %s", exc)
+
+    if "extract_ans_quarterly" in stages:
+        try:
+            results["ans_quarterly"] = extract_ans_quarterly_source(
+                years, data_dir, processed_dir,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_ans_quarterly failed: %s", exc)
+
+    if "extract_census_sanitation" in stages:
+        try:
+            results["census_sanitation"] = extract_census_sanitation_source(
+                processed_dir,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_census_sanitation failed: %s", exc)
+
+    if "extract_renavam" in stages:
+        try:
+            results["renavam"] = extract_renavam_source(years, processed_dir)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_renavam failed: %s", exc)
+
+    if "extract_siops" in stages:
+        try:
+            results["siops"] = extract_siops_source(years, processed_dir)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_siops failed: %s", exc)
 
     if "transform_merge" in stages:
         try:
