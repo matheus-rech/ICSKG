@@ -21,6 +21,9 @@ dependencies = [
     "scikit-learn>=1.6,<2.0",
     "xgboost>=2.1,<4.0",
     "linearmodels>=7.0",
+    "shap>=0.46,<1.0",
+    "numba>=0.60",
+    "llvmlite>=0.43",
     # Visualization
     "matplotlib>=3.9",
     "seaborn>=0.13",
