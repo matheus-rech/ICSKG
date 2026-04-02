@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-02-PLAN.md (SIH aggregation)
-last_updated: "2026-04-02T01:30:52.203Z"
+stopped_at: Completed 03-01-PLAN.md (IBGE SIDRA extraction)
+last_updated: "2026-04-02T02:07:53.975Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 10
   completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 12
+  completed_plans: 9
   percent: 63
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-01)
 
 **Core value:** Reproducible, publicly-sourced database proving whether municipal urban development predicts surgical system performance — first subnational cross-reference of urban development composite indices with surgical indicators.
-**Current focus:** Phase 2 — SIH & CNES Extraction
+**Current focus:** Phase 03 — secondary-source-extraction
 
 ## Current Position
 
-Phase: 3 of 10 (secondary source extraction)
-Plan: Not started
+Phase: 03 (secondary-source-extraction) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
 Last activity: 2026-04-02
 
@@ -60,6 +60,7 @@ Progress: [██████░░░░] 63%
 | Phase 02 P03 | 3min | 2 tasks | 4 files |
 | Phase 02 P02 | 3min | 2 tasks | 3 files |
 | Phase 02 P04 | 5min | 2 tasks | 4 files |
+| Phase 03 P01 | 3min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,9 @@ Recent decisions affecting current work:
 - [Phase 02]: pipeline.py extract_sih() returns directory path (processed_dir) for multi-file output pattern
 - [Phase 02]: Professional data uses custom validation (cod_ibge + year scope) instead of standard validate_dataframe() -- no_duplicate_keys check inappropriate for per-professional rows
 - [Phase 02]: PF download is best-effort PySUS wrapper -- graceful degradation if DATASUS FTP unavailable
+- [Phase 03]: Population table routing: 6579 for <=2021, 4709 for >=2022
+- [Phase 03]: GDP per capita computed as gdp_abs * 1000 / populacao (not a SIDRA variable)
+- [Phase 03]: GDP 2022-2023 flagged as estimated via gdp_estimated boolean column
 
 ### Pending Todos
 
@@ -102,8 +106,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T01:21:10.980Z
-Stopped at: Completed 02-02-PLAN.md (SIH aggregation)
+Last session: 2026-04-02T02:07:53.973Z
+Stopped at: Completed 03-01-PLAN.md (IBGE SIDRA extraction)
 Last session: 2026-04-02T01:23:06.635Z
 Stopped at: Completed 02-04-PLAN.md (CNES PF professional extraction)
 Last session: 2026-04-02T01:13:10.093Z
