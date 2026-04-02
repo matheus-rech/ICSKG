@@ -105,7 +105,10 @@ Plans:
   2. After within-year normalization, every dimension has exactly one municipality scoring 0.0 and one scoring 1.0 per year — confirmed by assertion
   3. CUDS is computed as a geometric mean with floor offset (epsilon=0.01), no municipality scores exactly 0.0 CUDS, and the distribution is right-skewed (majority below 0.5) as expected for Brazilian municipal inequality
   4. Census 2022 sanitation (D5) and IDHM/proxy (D3) are explicitly annotated as cross-sectional in `dimension_metadata` table, with a note in the computation log that they do not represent genuine temporal variation
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 05-01-PLAN.md — 8 CIMI dimension scores, within-year min-max normalization, CUDS geometric mean, SQLite persistence
 
 ### Phase 6: LCoGS Indicators
 **Goal**: All 6 LCoGS surgical outcome indicators are computed at municipality-year level and loaded into SQLite, ready for regression analysis
@@ -178,7 +181,7 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 | 2. SIH & CNES Extraction | 4/4 | Complete |  |
 | 3. Secondary Source Extraction | 4/4 | Complete | - |
 | 4. Panel Assembly & Validation | 0/2 | Not started | - |
-| 5. Dimension Computation & CUDS | 0/TBD | Not started | - |
+| 5. Dimension Computation & CUDS | 0/1 | Not started | - |
 | 6. LCoGS Indicators | 0/TBD | Not started | - |
 | 7. Statistical Analysis | 0/TBD | Not started | - |
 | 8. Machine Learning Models | 0/TBD | Not started | - |
