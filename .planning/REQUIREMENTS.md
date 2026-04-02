@@ -25,8 +25,8 @@
 - [ ] **DATA-03**: IBGE SIDRA extractor — population estimates (table 6579) and GDP per capita (table 5938) for all municipalities via API
 - [ ] **DATA-04**: IPEA IDHM extractor — composite + education/longevity/income sub-indices via OData API; handle census-only availability (2010, 2022)
 - [ ] **DATA-05**: FIRJAN IFGF parser — 5 sub-indices + IFGF Geral from Excel file for 2015-2023
-- [ ] **DATA-06**: ANS beneficiary extractor — quarterly beneficiary counts averaged (not December snapshot) for private coverage rate computation
-- [ ] **DATA-07**: IBGE Census 2022 sanitation extractor — adequate sanitation % and water supply % via Panorama API
+- [x] **DATA-06**: ANS beneficiary extractor — quarterly beneficiary counts averaged (not December snapshot) for private coverage rate computation
+- [x] **DATA-07**: IBGE Census 2022 sanitation extractor — adequate sanitation % and water supply % via Panorama API
 - [ ] **DATA-08**: RENAVAM vehicle fleet parser — vehicles per 1,000 inhabitants from dados.transportes.gov.br CSVs (format discovery required)
 - [ ] **DATA-09**: SIOPS health expenditure extractor — per-capita municipal health spending from portalfns.saude.gov.br (format discovery required)
 - [ ] **DATA-10**: All monetary variables (SIOPS, GDP) deflated to constant 2023 BRL using IPCA indices
@@ -130,8 +130,8 @@
 | DATA-03 | Phase 2 | Pending |
 | DATA-04 | Phase 2 | Pending |
 | DATA-05 | Phase 2 | Pending |
-| DATA-06 | Phase 2 | Pending |
-| DATA-07 | Phase 2 | Pending |
+| DATA-06 | Phase 2 | Complete |
+| DATA-07 | Phase 2 | Complete |
 | DATA-08 | Phase 2 | Pending |
 | DATA-09 | Phase 2 | Pending |
 | DATA-10 | Phase 3 | Pending |
