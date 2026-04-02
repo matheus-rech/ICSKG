@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 06-01-PLAN.md (LCoGS indicators)
-last_updated: "2026-04-02T04:08:07.842Z"
+stopped_at: "Completed 08-01-PLAN.md (ML models: RF + XGBoost with SHAP)"
+last_updated: "2026-04-02T04:24:27.442Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 10
-  completed_phases: 6
-  total_plans: 16
-  completed_plans: 16
+  completed_phases: 7
+  total_plans: 18
+  completed_plans: 17
   percent: 93
 ---
 
@@ -68,6 +68,7 @@ Progress: [█████████░] 93%
 | Phase 04 P02 | 6min | 2 tasks | 4 files |
 | Phase 05 P01 | 4min | 2 tasks | 3 files |
 | Phase 06 P01 | 5min | 2 tasks | 3 files |
+| Phase 08 P01 | 8min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -118,6 +119,9 @@ Recent decisions affecting current work:
 - [Phase 06]: CATASTROPHIC_THRESHOLD = 0.10 (10% GDP/cap) for LCoGS-6 ecological proxy
 - [Phase 06]: Municipality centroids via geobr (IBGE 2022 shapefiles) with module-level cache for LCoGS-1 haversine distances
 - [Phase 06]: LCoGS-4 POMR suppressed to NaN for <10 surgical events; LCoGS-5/6 ecological-proxy caveats in lcogs_metadata
+- [Phase 08]: GroupKFold with macro-region as group prevents geographic leakage between CV folds
+- [Phase 08]: Fixed hyperparameters (n_estimators=500, random_state=42) without grid search -- documented as defaults
+- [Phase 08]: numba>=0.60 and llvmlite>=0.43 pinned explicitly for Python 3.12 compatibility
 
 ### Pending Todos
 
@@ -132,8 +136,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T04:00:31.395Z
-Stopped at: Completed 06-01-PLAN.md (LCoGS indicators)
+Last session: 2026-04-02T04:24:27.439Z
+Stopped at: Completed 08-01-PLAN.md (ML models: RF + XGBoost with SHAP)
 Last session: 2026-04-02T02:11:59.882Z
 Stopped at: Completed 03-02-PLAN.md
 Last session: 2026-04-02T02:10:44.742Z

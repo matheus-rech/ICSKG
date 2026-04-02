@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 5: Dimension Computation & CUDS** - All 8 active CIMI dimension scores computed, within-year min-max normalized, and geometric-mean CUDS derived
 - [ ] **Phase 6: LCoGS Indicators** - All 6 LCoGS surgical outcome indicators computed at municipality-year level and loaded into SQLite
 - [ ] **Phase 7: Statistical Analysis** - Two-way fixed-effects panel regressions with cluster-robust SEs, Hausman test, dose-response, and sensitivity analyses
-- [ ] **Phase 8: Machine Learning Models** - Random Forest and XGBoost with region-stratified cross-validation and SHAP feature importance
+- [x] **Phase 8: Machine Learning Models** - Random Forest and XGBoost with region-stratified cross-validation and SHAP feature importance (completed 2026-04-02)
 - [ ] **Phase 9: Spatial Analysis** - Moran's I autocorrelation test, choropleth maps, and regional disparity analysis
 - [ ] **Phase 10: Publication Package** - Publication-ready figures, tables, STROBE/RECORD checklists, data dictionary, and Zenodo release
 
@@ -152,7 +152,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 08-01-PLAN.md — RF + XGBoost training with region-stratified 5-fold CV, SHAP beeswarm plots, ml_metrics.csv
+- [x] 08-01-PLAN.md — RF + XGBoost training with region-stratified 5-fold CV, SHAP beeswarm plots, ml_metrics.csv
 
 ### Phase 9: Spatial Analysis
 **Goal**: Spatial autocorrelation of regression residuals is tested, and publication-ready choropleth and heatmap figures document the geographic distribution of CUDS and LCoGS indicators
@@ -193,6 +193,6 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 | 5. Dimension Computation & CUDS | 0/1 | Not started | - |
 | 6. LCoGS Indicators | 0/1 | Not started | - |
 | 7. Statistical Analysis | 0/1 | Not started | - |
-| 8. Machine Learning Models | 0/1 | Not started | - |
+| 8. Machine Learning Models | 1/1 | Complete   | 2026-04-02 |
 | 9. Spatial Analysis | 0/TBD | Not started | - |
 | 10. Publication Package | 0/TBD | Not started | - |
