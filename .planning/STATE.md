@@ -2,21 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
+status: completed
 stopped_at: Completed 10-01-PLAN.md (publication figures + tables)
-last_updated: "2026-04-02T05:43:00Z"
-last_activity: 2026-04-02 -- Completed 10-01-PLAN.md
-status: verifying
-stopped_at: Completed 10-02-PLAN.md (STROBE/RECORD + data dictionary + Zenodo prep)
-last_updated: "2026-04-02T05:45:15.210Z"
+last_updated: "2026-04-02T05:48:21.421Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 11
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 24
-  completed_plans: 23
-percent: 96
-percent: 93
+  completed_plans: 24
+  percent: 96
 ---
 
 # Project State
@@ -30,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 
 ## Current Position
 
-Phase: 10 (publication-package) — EXECUTING
-Plan: 2 of 2
+Phase: 10
+Plan: Not started
 Status: Completed 10-01-PLAN.md
-Last activity: 2026-04-02 -- Completed 10-01-PLAN.md (publication figures + tables)
+Last activity: 2026-04-02
 
 Progress: [██████████] 96%
 
