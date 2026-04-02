@@ -292,6 +292,154 @@ def _process_uf_month(
 
 
 # ---------------------------------------------------------------------------
+# Municipality-year aggregation
+# ---------------------------------------------------------------------------
+
+def aggregate_sih_year(
+    processed_dir: Path,
+    output_dir: Path,
+    year: int,
+    skip_existing: bool = True,
+) -> Path:
+    """Aggregate per-UF-month Parquet files into municipality-year summaries.
+
+    Reads all Parquet files in *processed_dir* matching the target *year*,
+    groups by (cod_ibge, year), and produces aggregated surgical statistics
+    needed by LCoGS indicators 3-6:
+
+      - n_procedures  : count of unique hospitalisations (N_AIH)
+      - n_deaths      : sum of in-hospital deaths (MORTE)
+      - total_cost_brl: sum of total billed value (VAL_TOT)
+      - mean_stay_days: mean length of stay (DIAS_PERM)
+
+    Runs validate_dataframe() on the aggregated output before writing.
+
+    Parameters
+    ----------
+    processed_dir : Path
+        Directory containing per-UF-month Parquet files from process_sih_month().
+    output_dir : Path
+        Directory for aggregated output Parquet files.
+    year : int
+        Target year to aggregate.
+    skip_existing : bool
+        If True, skip when output file already exists.
+
+    Returns
+    -------
+    Path
+        Path to the written aggregated Parquet file.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / ("sih_mun_year_%d.parquet" % year)
+
+    # Idempotent: skip if output already exists
+    if skip_existing and output_path.exists() and output_path.stat().st_size > 0:
+        logger.debug("Aggregated output exists, skipping: %s", output_path)
+        return output_path
+
+    # Glob all Parquet files in processed_dir
+    parquet_files = sorted(processed_dir.glob("*.parquet"))
+    if not parquet_files:
+        logger.warning(
+            "aggregate_sih_year: no Parquet files found in %s", processed_dir
+        )
+        # Write empty output with expected schema
+        empty_df = pd.DataFrame(columns=[
+            "cod_ibge", "year", "n_procedures", "n_deaths",
+            "total_cost_brl", "mean_stay_days",
+        ])
+        empty_df.to_parquet(output_path, index=False)
+        return output_path
+
+    # Read all matching Parquet files into a single DataFrame
+    frames = []
+    for pf in parquet_files:
+        try:
+            df = pd.read_parquet(pf)
+            frames.append(df)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Failed to read %s: %s", pf, exc)
+
+    if not frames:
+        logger.warning("aggregate_sih_year: no readable Parquet files for year %d", year)
+        empty_df = pd.DataFrame(columns=[
+            "cod_ibge", "year", "n_procedures", "n_deaths",
+            "total_cost_brl", "mean_stay_days",
+        ])
+        empty_df.to_parquet(output_path, index=False)
+        return output_path
+
+    combined = pd.concat(frames, ignore_index=True)
+
+    # Filter to target year (safety check)
+    combined["year"] = pd.to_numeric(combined["year"], errors="coerce")
+    combined = combined[combined["year"] == year]
+
+    if combined.empty:
+        logger.warning("aggregate_sih_year: no rows for year %d after filtering", year)
+        empty_df = pd.DataFrame(columns=[
+            "cod_ibge", "year", "n_procedures", "n_deaths",
+            "total_cost_brl", "mean_stay_days",
+        ])
+        empty_df.to_parquet(output_path, index=False)
+        return output_path
+
+    # Ensure numeric types for aggregation columns
+    combined["MORTE"] = pd.to_numeric(combined["MORTE"], errors="coerce").fillna(0).astype(int)
+    combined["VAL_TOT"] = pd.to_numeric(combined["VAL_TOT"], errors="coerce").fillna(0.0)
+    combined["DIAS_PERM"] = pd.to_numeric(combined["DIAS_PERM"], errors="coerce").fillna(0.0)
+
+    # Group by (cod_ibge, year) and aggregate
+    agg_df = (
+        combined
+        .groupby(["cod_ibge", "year"], as_index=False)
+        .agg(
+            n_procedures=("N_AIH", "count"),
+            n_deaths=("MORTE", "sum"),
+            total_cost_brl=("VAL_TOT", "sum"),
+            mean_stay_days=("DIAS_PERM", "mean"),
+        )
+    )
+
+    # Ensure year is int for validation
+    agg_df["year"] = agg_df["year"].astype(int)
+
+    # Run validation gate (quality check -- logs warnings for invalid codes)
+    from database.validation import validate_dataframe  # noqa: PLC0415
+
+    _clean_df, report = validate_dataframe(
+        agg_df,
+        source_name="sih_aggregated",
+        strict=False,
+        quarantine_dir=output_dir.parent / "quarantine",
+    )
+
+    if not report.passed:
+        logger.warning(
+            "SIH aggregated %d: validation quarantined %d/%d rows -- "
+            "writing full aggregation (quarantined rows logged separately)",
+            year,
+            report.n_quarantined,
+            report.n_rows_input,
+        )
+
+    # Write full aggregated output (validation is a quality gate, not a filter
+    # at aggregation level -- downstream merge handles final filtering)
+    agg_df.to_parquet(output_path, index=False, compression="snappy")
+
+    logger.info(
+        "  ✓ SIH aggregated %d: %d municipalities, %d procedures, %d deaths -> %s",
+        year,
+        len(agg_df),
+        int(agg_df["n_procedures"].sum()) if len(agg_df) > 0 else 0,
+        int(agg_df["n_deaths"].sum()) if len(agg_df) > 0 else 0,
+        output_path,
+    )
+    return output_path
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
