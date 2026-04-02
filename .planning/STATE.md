@@ -79,6 +79,7 @@ Progress: [█████████░] 93%
 >>>>>>> worktree-agent-a030292d
 | Phase 09.1 P01 | 3min | 2 tasks | 2 files |
 | Phase 09.1 P02 | 4min | 2 tasks | 3 files |
+| Phase 09.1 P03 | 5min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -143,6 +144,8 @@ Recent decisions affecting current work:
 - [Phase 09.1]: Direct age-standardization with Brazil national age structure as standard population
 - [Phase 09.1]: BCB SGS series 3698 for BRL/USD rate with 4.9942 hardcoded fallback
 - [Phase 09.1]: Health region crosswalk 3-tier fallback: CSV > DATASUS > microregion proxy
+- [Phase 09.1]: t-distribution CI for mean_ci (not z-interval) -- correct for small n like CV folds
+- [Phase 09.1]: Self-contained _haversine_km in network_distances.py to avoid cross-module dependency
 
 ### Pending Todos
 
@@ -159,6 +162,8 @@ None yet.
 
 Last session: 2026-04-02T05:10:09.194Z
 Stopped at: Completed 09.1-01-PLAN.md (EconML causal inference + PCA composite)
+Last session: 2026-04-02T05:19:09Z
+Stopped at: Completed 09.1-03-PLAN.md (CI/dispersion + network distance metrics)
 Last session: 2026-04-02T05:11:24.711Z
 Stopped at: Completed 09.1-02-PLAN.md (age-standardization, health regions, USD conversion)
 Last session: 2026-04-02T04:51:04.840Z
