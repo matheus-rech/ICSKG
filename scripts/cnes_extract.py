@@ -445,37 +445,365 @@ def extract_cnes_facilities(
 
 
 # ---------------------------------------------------------------------------
+# CNES PF (professional) columns
+# ---------------------------------------------------------------------------
+
+CNES_PF_COLS: list[str] = [
+    "CNES", "CODUFMUN", "CNS_PROF", "CBO", "COMPETEN",
+]
+
+# All 27 Brazilian UF codes
+UF_CODES: list[str] = [
+    "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA",
+    "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN",
+    "RO", "RR", "RS", "SC", "SE", "SP", "TO",
+]
+
+
+# ---------------------------------------------------------------------------
+# PySUS download for CNES PF files
+# ---------------------------------------------------------------------------
+
+def download_cnes_pf(
+    output_dir: Path,
+    ufs: list[str] | None = None,
+    years: list[int] | None = None,
+    months: list[int] | None = None,
+) -> list[Path]:
+    """Download CNES PF (professional) files from DATASUS FTP via PySUS.
+
+    This is a thin wrapper around the PySUS ``download()`` function for
+    group "PF".  If PySUS is not installed or the DATASUS FTP is
+    unreachable, logs an error and returns an empty list.
+
+    Parameters
+    ----------
+    output_dir : Path
+        Directory to store downloaded Parquet files.
+    ufs : list[str], optional
+        Brazilian state codes (e.g., ["SP", "RJ"]). Defaults to all 27 UFs.
+    years : list[int], optional
+        Years to download (e.g., [2023]). Defaults to [2023].
+    months : list[int], optional
+        Months to download (e.g., [1, 2, ..., 12]). Defaults to all 12.
+
+    Returns
+    -------
+    list[Path]
+        Paths to downloaded Parquet files.
+    """
+    if ufs is None:
+        ufs = UF_CODES
+    if years is None:
+        years = [2023]
+    if months is None:
+        months = list(range(1, 13))
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        from pysus.online_data.CNES import download as cnes_download  # noqa: PLC0415
+    except ImportError:
+        logger.error(
+            "pysus not installed -- cannot download CNES PF files. "
+            "Install with: pip install pysus"
+        )
+        return []
+
+    downloaded: list[Path] = []
+    for uf in ufs:
+        try:
+            files = cnes_download(
+                group="PF",
+                states=uf,
+                years=years,
+                months=months,
+                data_dir=str(output_dir),
+            )
+            for f in files:
+                p = Path(f)
+                if p.exists():
+                    downloaded.append(p)
+            logger.info(
+                "Downloaded %d CNES PF files for UF=%s", len(files), uf
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error(
+                "CNES PF download failed for UF=%s: %s", uf, exc
+            )
+
+    logger.info(
+        "CNES PF download complete: %d files in %s", len(downloaded), output_dir
+    )
+    return downloaded
+
+
+# ---------------------------------------------------------------------------
+# CNES PF professional extraction
+# ---------------------------------------------------------------------------
+
+def extract_cnes_professionals(
+    input_dir: Path,
+    output_dir: Path,
+    year: int,
+) -> Path:
+    """Extract SAO professionals from CNES PF files.
+
+    Reads all PF Parquet/CSV files in *input_dir* for the target year,
+    filters to SAO professionals (surgeons, anesthesiologists, obstetricians)
+    using CBO_SAO codes, deduplicates by (cns_prof, cod_ibge, year), classifies
+    sao_category, and writes professionals.parquet.
+
+    Parameters
+    ----------
+    input_dir : Path
+        Directory containing CNES PF files (Parquet or CSV).
+    output_dir : Path
+        Where to write professionals.parquet.
+    year : int
+        Target year (4-digit, e.g. 2023).
+
+    Returns
+    -------
+    Path
+        Path to the written professionals.parquet file.
+    """
+    from database.utils import normalize_cod_ibge, rename_municipality_column  # noqa: PLC0415
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Glob for PF files -- support both Parquet and CSV
+    pf_files: list[Path] = []
+    for pattern in [
+        "*.parquet",
+        "*PF*%d*.csv" % year,
+        "*PF*%02d*.csv" % (year % 100),
+        "*pf*%d*.csv" % year,
+        "CNES_PF*%d*.csv" % year,
+    ]:
+        pf_files.extend(input_dir.glob(pattern))
+
+    # Deduplicate file list
+    pf_files = sorted(set(pf_files))
+
+    if not pf_files:
+        logger.warning(
+            "No CNES PF files found for year %d in %s", year, input_dir
+        )
+        empty = pd.DataFrame(columns=[
+            "cnes", "cod_ibge", "year", "cbo", "cns_prof", "sao_category",
+        ])
+        out_path = output_dir / "professionals.parquet"
+        empty.to_parquet(out_path, index=False, compression="snappy")
+        return out_path
+
+    logger.info("Reading %d CNES PF files for year %d", len(pf_files), year)
+
+    # Read all matching files
+    frames: list[pd.DataFrame] = []
+    for pf_file in pf_files:
+        try:
+            if pf_file.suffix == ".parquet":
+                df = pd.read_parquet(pf_file)
+            else:
+                df = pd.read_csv(pf_file, dtype=str)
+            frames.append(df)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Failed to read %s: %s", pf_file, exc)
+
+    if not frames:
+        logger.error("All CNES PF files failed to read for year %d", year)
+        empty = pd.DataFrame(columns=[
+            "cnes", "cod_ibge", "year", "cbo", "cns_prof", "sao_category",
+        ])
+        out_path = output_dir / "professionals.parquet"
+        empty.to_parquet(out_path, index=False, compression="snappy")
+        return out_path
+
+    combined = pd.concat(frames, ignore_index=True)
+    logger.info("Combined %d PF rows from %d files", len(combined), len(frames))
+
+    # ---------------------------------------------------------------------------
+    # Ensure required columns exist (case-insensitive matching)
+    # ---------------------------------------------------------------------------
+    col_map = {c.upper(): c for c in combined.columns}
+    needed = {"CNES", "CODUFMUN", "CNS_PROF", "CBO", "COMPETEN"}
+    renames = {}
+    for need in needed:
+        if need not in combined.columns and need in col_map:
+            renames[col_map[need]] = need
+    if renames:
+        combined = combined.rename(columns=renames)
+
+    # Convert CBO to string for filtering
+    combined["CBO"] = combined["CBO"].astype(str).str.strip()
+
+    # ---------------------------------------------------------------------------
+    # Filter to SAO professionals (CBO in CBO_SAO)
+    # ---------------------------------------------------------------------------
+    before_filter = len(combined)
+    combined = combined[combined["CBO"].isin(CBO_SAO)].copy()
+    logger.info(
+        "CBO filter: %d -> %d SAO professionals", before_filter, len(combined)
+    )
+
+    if combined.empty:
+        logger.warning("No SAO professionals found after CBO filtering")
+        empty = pd.DataFrame(columns=[
+            "cnes", "cod_ibge", "year", "cbo", "cns_prof", "sao_category",
+        ])
+        out_path = output_dir / "professionals.parquet"
+        empty.to_parquet(out_path, index=False, compression="snappy")
+        return out_path
+
+    # ---------------------------------------------------------------------------
+    # Rename CODUFMUN -> cod_ibge and normalize
+    # ---------------------------------------------------------------------------
+    combined = rename_municipality_column(combined)
+    combined["cod_ibge"] = normalize_cod_ibge(combined["cod_ibge"])
+
+    # ---------------------------------------------------------------------------
+    # Extract year from COMPETEN (YYYYMM -> YYYY)
+    # ---------------------------------------------------------------------------
+    combined["year"] = (
+        pd.to_numeric(combined["COMPETEN"], errors="coerce") // 100
+    ).astype(int)
+
+    # ---------------------------------------------------------------------------
+    # Classify sao_category
+    # ---------------------------------------------------------------------------
+    def _classify_sao(cbo: str) -> str:
+        if cbo in CBO_SURGEONS:
+            return "surgeon"
+        if cbo in CBO_ANESTHESIOLOGISTS:
+            return "anesthesiologist"
+        if cbo in CBO_OBSTETRICIANS:
+            return "obstetrician"
+        return "unknown"
+
+    combined["sao_category"] = combined["CBO"].apply(_classify_sao)
+
+    # ---------------------------------------------------------------------------
+    # Ensure CNS_PROF is string for deduplication
+    # ---------------------------------------------------------------------------
+    combined["CNS_PROF"] = combined["CNS_PROF"].astype(str).str.strip()
+
+    # ---------------------------------------------------------------------------
+    # Deduplicate by (cns_prof, cod_ibge, year) -- keep first
+    # A professional at 2 hospitals in the same municipality counts once
+    # ---------------------------------------------------------------------------
+    before_dedup = len(combined)
+    combined = combined.drop_duplicates(
+        subset=["CNS_PROF", "cod_ibge", "year"], keep="first"
+    )
+    after_dedup = len(combined)
+    if before_dedup != after_dedup:
+        logger.debug(
+            "CNS deduplication: %d -> %d professionals",
+            before_dedup, after_dedup,
+        )
+
+    # ---------------------------------------------------------------------------
+    # Rename columns to lowercase output schema
+    # ---------------------------------------------------------------------------
+    combined = combined.rename(columns={
+        "CNES": "cnes",
+        "CBO": "cbo",
+        "CNS_PROF": "cns_prof",
+    })
+
+    # Select and order output columns
+    output_cols = ["cnes", "cod_ibge", "year", "cbo", "cns_prof", "sao_category"]
+    combined = combined[output_cols].copy()
+
+    # ---------------------------------------------------------------------------
+    # Validate cod_ibge and year (skip duplicate-key check -- professional data
+    # has multiple rows per municipality-year by design)
+    # ---------------------------------------------------------------------------
+    try:
+        from database.utils import load_ibge_municipios  # noqa: PLC0415
+        ref = load_ibge_municipios()
+        valid_codes: set[str] = set(ref["cod_ibge"])
+        ibge_mask = combined["cod_ibge"].isin(valid_codes)
+        n_invalid = (~ibge_mask).sum()
+        if n_invalid > 0:
+            logger.warning(
+                "cnes_professionals: %d rows with invalid cod_ibge removed",
+                n_invalid,
+            )
+            combined = combined[ibge_mask].copy()
+    except FileNotFoundError:
+        logger.warning(
+            "IBGE reference not found -- skipping cod_ibge validation"
+        )
+
+    # Year scope check (2015-2023)
+    year_mask = combined["year"].between(2015, 2023)
+    n_out = (~year_mask).sum()
+    if n_out > 0:
+        logger.warning(
+            "cnes_professionals: %d rows outside 2015-2023 removed", n_out
+        )
+        combined = combined[year_mask].copy()
+
+    clean_df = combined
+
+    # ---------------------------------------------------------------------------
+    # Write output
+    # ---------------------------------------------------------------------------
+    out_path = output_dir / "professionals.parquet"
+    clean_df.to_parquet(out_path, index=False, compression="snappy")
+
+    # Log summary
+    n_surg = len(clean_df[clean_df["sao_category"] == "surgeon"])
+    n_anes = len(clean_df[clean_df["sao_category"] == "anesthesiologist"])
+    n_obst = len(clean_df[clean_df["sao_category"] == "obstetrician"])
+    n_mun = clean_df["cod_ibge"].nunique()
+    logger.info(
+        "Wrote %d SAO professionals (%d surgeons, %d anesthesiologists, "
+        "%d obstetricians) across %d municipalities -> %s",
+        len(clean_df), n_surg, n_anes, n_obst, n_mun, out_path,
+    )
+
+    return out_path
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
 def main(argv=None) -> int:
-    """Command-line entry point for CNES facility extraction."""
+    """Command-line entry point for CNES extraction."""
     parser = argparse.ArgumentParser(
-        description="ICSKG-BR CNES Establishment Extractor"
+        description="ICSKG-BR CNES Establishment & Professional Extractor"
     )
     parser.add_argument(
-        "--zip-path",
-        type=Path,
-        default=None,
+        "--zip-path", type=Path, default=None,
         help="Path to ETLCNES.zip archive",
     )
     parser.add_argument(
-        "--input-dir",
-        type=Path,
-        default=None,
+        "--input-dir", type=Path, default=None,
         help="Directory containing extracted CNES ST CSV files",
     )
     parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=None,
+        "--output-dir", type=Path, default=None,
         help="Directory for output Parquet files",
     )
     parser.add_argument(
-        "--year",
-        type=int,
-        default=2023,
+        "--year", type=int, default=2023,
         help="Target year (default: 2023)",
+    )
+    parser.add_argument(
+        "--download-pf", action="store_true",
+        help="Download CNES PF files from DATASUS FTP via PySUS",
+    )
+    parser.add_argument(
+        "--pf-dir", type=Path, default=None,
+        help="Directory containing CNES PF files",
+    )
+    parser.add_argument(
+        "--ufs", nargs="+", default=None,
+        help="UF codes to download (default: all 27)",
     )
     args = parser.parse_args(argv)
 
@@ -491,19 +819,38 @@ def main(argv=None) -> int:
     output_dir = args.output_dir or data_root / "processed" / "cnes"
 
     logger.info("=" * 60)
-    logger.info("CNES Facility Extraction")
+    logger.info("CNES Extraction")
     logger.info("=" * 60)
-    logger.info("Input:  %s", input_dir)
-    logger.info("Output: %s", output_dir)
-    logger.info("Year:   %d", args.year)
-    logger.info("Zip:    %s", args.zip_path or "(none)")
 
+    # ST facility extraction
     extract_cnes_facilities(
         input_dir=input_dir,
         output_dir=output_dir,
         year=args.year,
         zip_path=args.zip_path,
     )
+
+    # PF professional download (if requested)
+    pf_dir = args.pf_dir or data_root / "raw" / "cnes_pf"
+    if args.download_pf:
+        logger.info("─" * 60)
+        logger.info("Downloading CNES PF files from DATASUS FTP")
+        download_cnes_pf(
+            output_dir=pf_dir, ufs=args.ufs, years=[args.year],
+        )
+
+    # PF professional extraction (if PF files available)
+    if pf_dir.exists() and any(pf_dir.iterdir()):
+        logger.info("─" * 60)
+        logger.info("Extracting CNES PF professionals")
+        extract_cnes_professionals(
+            input_dir=pf_dir, output_dir=output_dir, year=args.year,
+        )
+    else:
+        logger.warning(
+            "No CNES PF files at %s -- use --download-pf to download.",
+            pf_dir,
+        )
 
     return 0
 

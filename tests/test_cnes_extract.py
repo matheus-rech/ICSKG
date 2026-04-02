@@ -260,20 +260,20 @@ class TestExtractCNESProfessionals:
             year=2023,
         )
         df = pd.read_parquet(output)
-        # CNS_PROF 700001 in CODUFMUN 355030 appears twice in fixture (rows 1 and 6)
-        # After dedup, should appear only once in 355030
-        surg_355030 = df[
-            (df["cns_prof"] == "700001") & (df["cod_ibge"] == "0355030")
+        # CNS_PROF 700001 in CODUFMUN 3550308 appears twice in fixture (rows 1 and 6)
+        # After dedup, should appear only once in 3550308
+        surg_sp = df[
+            (df["cns_prof"] == "700001") & (df["cod_ibge"] == "3550308")
         ]
-        assert len(surg_355030) == 1, (
-            "Expected 1 row for CNS 700001 in 355030, got %d" % len(surg_355030)
+        assert len(surg_sp) == 1, (
+            "Expected 1 row for CNS 700001 in 3550308, got %d" % len(surg_sp)
         )
-        # But CNS_PROF 700001 in 120020 (different municipality) should still exist
-        surg_120020 = df[
-            (df["cns_prof"] == "700001") & (df["cod_ibge"] == "0120020")
+        # But CNS_PROF 700001 in 1200203 (different municipality) should still exist
+        surg_ac = df[
+            (df["cns_prof"] == "700001") & (df["cod_ibge"] == "1200203")
         ]
-        assert len(surg_120020) == 1, (
-            "Expected 1 row for CNS 700001 in 120020, got %d" % len(surg_120020)
+        assert len(surg_ac) == 1, (
+            "Expected 1 row for CNS 700001 in 1200203, got %d" % len(surg_ac)
         )
 
     def test_extract_cnes_professionals_sao_category(self, tmp_path):
