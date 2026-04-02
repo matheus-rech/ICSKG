@@ -58,7 +58,7 @@ Plans:
 Plans:
 - [ ] 02-01-PLAN.md — SIH CSV-to-Parquet extraction with DuckDB column projection, test fixtures, municipality code normalization
 - [ ] 02-02-PLAN.md — SIH municipality-year aggregation and pipeline.py extract_sih() rewiring
-- [ ] 02-03-PLAN.md — CNES ST facility extraction from ETLCNES.zip, bellwether filter, CBO code constants
+- [x] 02-03-PLAN.md — CNES ST facility extraction from ETLCNES.zip, bellwether filter, CBO code constants
 - [ ] 02-04-PLAN.md — CNES PF professional download via PySUS, SAO filtering, pipeline.py extract_cnes() rewiring
 
 ### Phase 3: Secondary Source Extraction
