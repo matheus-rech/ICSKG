@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 07-01-PLAN.md (panel regressions, Hausman, dose-response, sensitivity)
-last_updated: "2026-04-02T04:52:19.199Z"
+stopped_at: Completed 09.1-01-PLAN.md (EconML causal inference + PCA composite)
+last_updated: "2026-04-02T05:10:09.197Z"
 last_activity: 2026-04-02
 progress:
-  total_phases: 10
-  completed_phases: 9
-  total_plans: 19
-  completed_plans: 19
+  total_phases: 11
+  completed_phases: 10
+  total_plans: 20
+  completed_plans: 20
   percent: 93
 ---
 
@@ -73,6 +73,7 @@ Progress: [█████████░] 93%
 =======
 | Phase 09 P01 | 7min | 2 tasks | 4 files |
 >>>>>>> worktree-agent-a030292d
+| Phase 09.1 P01 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -133,6 +134,8 @@ Recent decisions affecting current work:
 
 - [Phase 09]: geobr pinned >=0.2 (not >=1.0) -- latest available is 0.2.2
 - [Phase 09]: Queen contiguity weights for Moran's I spatial autocorrelation (standard for areal data)
+- [Phase 09.1]: LassoCV for DML nuisance models; CausalForestDML 500 trees for CATE
+- [Phase 09.1]: scipy>=1.13 added as missing dependency (used by compute_dimensions, run_regressions)
 
 ### Pending Todos
 
@@ -147,8 +150,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T04:19:57.660Z
-Stopped at: Completed 07-01-PLAN.md (panel regressions, Hausman, dose-response, sensitivity)
+Last session: 2026-04-02T05:10:09.194Z
+Stopped at: Completed 09.1-01-PLAN.md (EconML causal inference + PCA composite)
 Last session: 2026-04-02T04:51:04.840Z
 Stopped at: Completed 09-01-PLAN.md (spatial analysis: Moran's I, choropleth, disparity, heatmaps, bivariate, patient flow)
 Last session: 2026-04-02T04:24:27.439Z
