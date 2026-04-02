@@ -176,17 +176,19 @@ Plans:
 **Depends on**: Phase 9
 **Requirements**: METH-01, METH-02, METH-03, METH-04, METH-05, METH-06, METH-07
 **Success Criteria** (what must be TRUE):
-  1. EconML DML and Causal Forest estimate CUDS→LCoGS treatment effects with confidence intervals
+  1. EconML DML and Causal Forest estimate CUDS->LCoGS treatment effects with confidence intervals
   2. Age-standardized surgical rates per 100,000 computed using IBGE standard age bands and gender stratification
-  3. All indicators aggregated at health region level (~450 Regiões de Saúde) in addition to municipality level
+  3. All indicators aggregated at health region level (~450 Regioes de Saude) in addition to municipality level
   4. PCA-derived composite score computed and compared with geometric-mean CUDS (correlation reported)
   5. All monetary values available in both constant 2023 BRL and USD
   6. Every summary statistic includes SD/SE or IQR plus 95% confidence intervals
-  7. Network distance metrics (MUNIC_RES→MUNIC_MOV travel distances) summarized per municipality-year
-**Plans**: TBD
+  7. Network distance metrics (MUNIC_RES->MUNIC_MOV travel distances) summarized per municipality-year
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 09.1 to break down)
+- [ ] 09.1-01-PLAN.md — EconML causal inference (DML + Causal Forest) + PCA composite score
+- [ ] 09.1-02-PLAN.md — Age-standardized rates, health region aggregation, USD conversion
+- [ ] 09.1-03-PLAN.md — CI/dispersion on all outputs + network distance metrics
 
 ### Phase 10: Publication Package
 **Goal**: A complete, submission-ready BMJ Global Health package exists — all required figures, tables, compliance checklists, data dictionary, and a Zenodo-archived public release
@@ -203,7 +205,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 
 Note: Phases 2 and 3 are independent and can be developed in parallel, but both must complete before Phase 4 begins.
 
@@ -219,4 +221,5 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 | 8. Machine Learning Models | 1/1 | Complete   | 2026-04-02 |
 | 9. Spatial Analysis | 0/1 | Not started | - |
 | 9. Spatial Analysis | 1/1 | Complete   | 2026-04-02 |
+| 9.1 Methodology Enhancements | 0/3 | Not started | - |
 | 10. Publication Package | 0/TBD | Not started | - |
