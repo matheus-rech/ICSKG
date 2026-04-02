@@ -45,6 +45,7 @@ Exports
 """
 
 import argparse
+import contextlib
 import logging
 import sqlite3
 import sys
@@ -513,35 +514,41 @@ def compute_and_save_shap(
             top_feat = feature_names[top_idx]
             top_features[(model_type, outcome)] = top_feat
 
-            # Generate beeswarm plot
+            # Determine style context
             try:
-                plt.style.use(["science", "no-latex"])
+                _style_ctx = plt.style.context(["science", "no-latex"])
+                # Verify it works by entering/exiting
+                _style_ctx.__enter__()
+                _style_ctx.__exit__(None, None, None)
+                style_list = ["science", "no-latex"]
             except Exception:  # noqa: BLE001
-                pass  # SciencePlots may not be available
+                style_list = []  # SciencePlots not available
 
-            fig, ax = plt.subplots(figsize=(10, 6))
-            plt.sca(ax)
-            shap.plots.beeswarm(
-                shap_values,
-                show=False,
-                max_display=8,
-            )
+            # Generate beeswarm plot with SciencePlots context
+            with plt.style.context(style_list) if style_list else contextlib.nullcontext():
+                fig, ax = plt.subplots(figsize=(10, 6))
+                plt.sca(ax)
+                shap.plots.beeswarm(
+                    shap_values,
+                    show=False,
+                    max_display=8,
+                )
 
-            model_label = MODEL_LABELS.get(model_type, model_type)
-            outcome_label = OUTCOME_LABELS.get(outcome, outcome)
-            ax.set_title(
-                "%s: %s" % (model_label, outcome_label),
-                fontsize=12,
-            )
+                model_label = MODEL_LABELS.get(model_type, model_type)
+                outcome_label = OUTCOME_LABELS.get(outcome, outcome)
+                ax.set_title(
+                    "%s: %s" % (model_label, outcome_label),
+                    fontsize=12,
+                )
 
-            filename = "%s_%s_shap.png" % (model_type, outcome)
-            filepath = shap_dir / filename
-            fig.savefig(
-                str(filepath),
-                dpi=300,
-                bbox_inches="tight",
-            )
-            plt.close(fig)
+                filename = "%s_%s_shap.png" % (model_type, outcome)
+                filepath = shap_dir / filename
+                fig.savefig(
+                    str(filepath),
+                    dpi=300,
+                    bbox_inches="tight",
+                )
+                plt.close(fig)
 
             logger.info(
                 "SHAP: saved %s (%d samples)",
