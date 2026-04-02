@@ -1,0 +1,93 @@
+[
+  {
+    "NC": "Nivel Territorial (Codigo)",
+    "NN": "Nivel Territorial",
+    "MC": "Unidade de Medida (Codigo)",
+    "MN": "Unidade de Medida",
+    "V": "Valor",
+    "D1C": "Municipio (Codigo)",
+    "D1N": "Municipio",
+    "D2C": "Variavel (Codigo)",
+    "D2N": "Variavel",
+    "D3C": "Ano (Codigo)",
+    "D3N": "Ano"
+  },
+  {
+    "NC": "6",
+    "NN": "Municipio",
+    "MC": "26",
+    "MN": "%",
+    "V": "78.5",
+    "D1C": "3550308",
+    "D1N": "Sao Paulo - SP",
+    "D2C": "1000381",
+    "D2N": "Percentual",
+    "D3C": "2022",
+    "D3N": "2022"
+  },
+  {
+    "NC": "6",
+    "NN": "Municipio",
+    "MC": "26",
+    "MN": "%",
+    "V": "45.2",
+    "D1C": "1200203",
+    "D1N": "Cruzeiro do Sul - AC",
+    "D2C": "1000381",
+    "D2N": "Percentual",
+    "D3C": "2022",
+    "D3N": "2022"
+  },
+  {
+    "NC": "6",
+    "NN": "Municipio",
+    "MC": "26",
+    "MN": "%",
+    "V": "92.1",
+    "D1C": "3304557",
+    "D1N": "Rio de Janeiro - RJ",
+    "D2C": "1000381",
+    "D2N": "Percentual",
+    "D3C": "2022",
+    "D3N": "2022"
+  },
+  {
+    "NC": "6",
+    "NN": "Municipio",
+    "MC": "26",
+    "MN": "%",
+    "V": "55.8",
+    "D1C": "1501402",
+    "D1N": "Belem - PA",
+    "D2C": "1000381",
+    "D2N": "Percentual",
+    "D3C": "2022",
+    "D3N": "2022"
+  },
+  {
+    "NC": "6",
+    "NN": "Municipio",
+    "MC": "26",
+    "MN": "%",
+    "V": "68.3",
+    "D1C": "2927408",
+    "D1N": "Salvador - BA",
+    "D2C": "1000381",
+    "D2N": "Percentual",
+    "D3C": "2022",
+    "D3N": "2022"
+  },
+  {
+    "NC": "6",
+    "NN": "Municipio",
+    "MC": "26",
+    "MN": "%",
+    "V": "...",
+    "D1C": "5101837",
+    "D1N": "Boa Esperanca do Norte - MT",
+    "D2C": "1000381",
+    "D2N": "Percentual",
+    "D3C": "2022",
+    "D3N": "2022"
+  }
+]
