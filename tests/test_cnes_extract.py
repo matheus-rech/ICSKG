@@ -20,6 +20,7 @@ from scripts.cnes_extract import (
     CBO_SURGEONS,
     CNES_ST_COLS,
     extract_cnes_facilities,
+    extract_cnes_professionals,
     filter_bellwether_facilities,
 )
 
@@ -192,4 +193,143 @@ class TestExtractCNESFacilities:
         )
         assert output.exists()
         assert output.name == "facilities.parquet"
+        assert output.stat().st_size > 0
+
+
+# ---------------------------------------------------------------------------
+# CNES PF Professional extraction tests
+# ---------------------------------------------------------------------------
+
+PF_FIXTURE_CSV = FIXTURE_DIR / "cnes_pf_sample.csv"
+
+
+class TestExtractCNESProfessionals:
+    """Tests for CNES PF professional extraction."""
+
+    def test_extract_cnes_professionals_columns(self, tmp_path):
+        """Output has columns [cnes, cod_ibge, year, cbo, cns_prof, sao_category]."""
+        # Copy fixture to input_dir as a PF-like file
+        input_dir = tmp_path / "input"
+        input_dir.mkdir()
+        import shutil
+        shutil.copy(PF_FIXTURE_CSV, input_dir / "CNES_PF_XX_2023_01.csv")
+
+        output = extract_cnes_professionals(
+            input_dir=input_dir,
+            output_dir=tmp_path / "output",
+            year=2023,
+        )
+        df = pd.read_parquet(output)
+        expected_cols = {"cnes", "cod_ibge", "year", "cbo", "cns_prof", "sao_category"}
+        assert expected_cols.issubset(set(df.columns)), (
+            "Missing columns: %s" % (expected_cols - set(df.columns))
+        )
+
+    def test_extract_cnes_professionals_cbo_filter(self, tmp_path):
+        """Only rows with CBO in CBO_SAO are retained."""
+        input_dir = tmp_path / "input"
+        input_dir.mkdir()
+        import shutil
+        shutil.copy(PF_FIXTURE_CSV, input_dir / "CNES_PF_XX_2023_01.csv")
+
+        output = extract_cnes_professionals(
+            input_dir=input_dir,
+            output_dir=tmp_path / "output",
+            year=2023,
+        )
+        df = pd.read_parquet(output)
+        # All CBOs in output must be in CBO_SAO
+        assert set(df["cbo"].unique()).issubset(CBO_SAO), (
+            "Non-SAO CBO codes found in output: %s"
+            % (set(df["cbo"].unique()) - CBO_SAO)
+        )
+        # Family medicine (225142) and dentist (223204) must NOT appear
+        assert "225142" not in df["cbo"].values
+        assert "223204" not in df["cbo"].values
+
+    def test_extract_cnes_professionals_cns_dedup(self, tmp_path):
+        """Duplicate CNS_PROF within same (cod_ibge, year) are deduplicated."""
+        input_dir = tmp_path / "input"
+        input_dir.mkdir()
+        import shutil
+        shutil.copy(PF_FIXTURE_CSV, input_dir / "CNES_PF_XX_2023_01.csv")
+
+        output = extract_cnes_professionals(
+            input_dir=input_dir,
+            output_dir=tmp_path / "output",
+            year=2023,
+        )
+        df = pd.read_parquet(output)
+        # CNS_PROF 700001 in CODUFMUN 3550308 appears twice in fixture (rows 1 and 6)
+        # After dedup, should appear only once in 3550308
+        surg_sp = df[
+            (df["cns_prof"] == "700001") & (df["cod_ibge"] == "3550308")
+        ]
+        assert len(surg_sp) == 1, (
+            "Expected 1 row for CNS 700001 in 3550308, got %d" % len(surg_sp)
+        )
+        # But CNS_PROF 700001 in 1200203 (different municipality) should still exist
+        surg_ac = df[
+            (df["cns_prof"] == "700001") & (df["cod_ibge"] == "1200203")
+        ]
+        assert len(surg_ac) == 1, (
+            "Expected 1 row for CNS 700001 in 1200203, got %d" % len(surg_ac)
+        )
+
+    def test_extract_cnes_professionals_sao_category(self, tmp_path):
+        """sao_category is 'surgeon', 'anesthesiologist', or 'obstetrician'."""
+        input_dir = tmp_path / "input"
+        input_dir.mkdir()
+        import shutil
+        shutil.copy(PF_FIXTURE_CSV, input_dir / "CNES_PF_XX_2023_01.csv")
+
+        output = extract_cnes_professionals(
+            input_dir=input_dir,
+            output_dir=tmp_path / "output",
+            year=2023,
+        )
+        df = pd.read_parquet(output)
+        valid_categories = {"surgeon", "anesthesiologist", "obstetrician"}
+        assert set(df["sao_category"].unique()).issubset(valid_categories), (
+            "Invalid sao_category values: %s"
+            % (set(df["sao_category"].unique()) - valid_categories)
+        )
+        # Check specific assignments
+        assert df.loc[df["cbo"] == "225225", "sao_category"].iloc[0] == "surgeon"
+        assert df.loc[df["cbo"] == "225151", "sao_category"].iloc[0] == "anesthesiologist"
+        assert df.loc[df["cbo"] == "225250", "sao_category"].iloc[0] == "obstetrician"
+        assert df.loc[df["cbo"] == "225260", "sao_category"].iloc[0] == "surgeon"
+
+    def test_extract_cnes_professionals_codufmun_normalized(self, tmp_path):
+        """CODUFMUN normalized to 7-digit cod_ibge."""
+        input_dir = tmp_path / "input"
+        input_dir.mkdir()
+        import shutil
+        shutil.copy(PF_FIXTURE_CSV, input_dir / "CNES_PF_XX_2023_01.csv")
+
+        output = extract_cnes_professionals(
+            input_dir=input_dir,
+            output_dir=tmp_path / "output",
+            year=2023,
+        )
+        df = pd.read_parquet(output)
+        for code in df["cod_ibge"]:
+            assert len(str(code)) == 7, (
+                "cod_ibge '%s' is not 7 digits" % code
+            )
+
+    def test_extract_cnes_professionals_writes_parquet(self, tmp_path):
+        """Output written to professionals.parquet."""
+        input_dir = tmp_path / "input"
+        input_dir.mkdir()
+        import shutil
+        shutil.copy(PF_FIXTURE_CSV, input_dir / "CNES_PF_XX_2023_01.csv")
+
+        output = extract_cnes_professionals(
+            input_dir=input_dir,
+            output_dir=tmp_path / "output",
+            year=2023,
+        )
+        assert output.exists()
+        assert output.name == "professionals.parquet"
         assert output.stat().st_size > 0

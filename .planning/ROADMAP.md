@@ -59,7 +59,7 @@ Plans:
 - [x] 02-01-PLAN.md — SIH CSV-to-Parquet extraction with DuckDB column projection, test fixtures, municipality code normalization
 - [x] 02-02-PLAN.md — SIH municipality-year aggregation and pipeline.py extract_sih() rewiring
 - [x] 02-03-PLAN.md — CNES ST facility extraction from ETLCNES.zip, bellwether filter, CBO code constants
-- [ ] 02-04-PLAN.md — CNES PF professional download via PySUS, SAO filtering, pipeline.py extract_cnes() rewiring
+- [x] 02-04-PLAN.md — CNES PF professional download via PySUS, SAO filtering, pipeline.py extract_cnes() rewiring
 
 ### Phase 3: Secondary Source Extraction
 **Goal**: All seven remaining data sources are extracted, parsed, and stored as standardized Parquet files with IBGE municipality codes canonicalized

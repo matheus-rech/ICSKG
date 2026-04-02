@@ -5,6 +5,8 @@ milestone_name: milestone
 status: executing
 stopped_at: Completed 02-02-PLAN.md (SIH aggregation)
 last_updated: "2026-04-02T01:21:10.983Z"
+stopped_at: Completed 02-04-PLAN.md (CNES PF professional extraction)
+last_updated: "2026-04-02T01:23:06.638Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 10
@@ -59,6 +61,7 @@ Progress: [██████░░░░] 63%
 | Phase 02 P01 | 3min | 2 tasks | 4 files |
 | Phase 02 P03 | 3min | 2 tasks | 4 files |
 | Phase 02 P02 | 3min | 2 tasks | 3 files |
+| Phase 02 P04 | 5min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -85,6 +88,8 @@ Recent decisions affecting current work:
 - [Phase 02]: filter_bellwether_facilities() returns FULL DataFrame with is_bellwether column -- downstream can use both bellwether and non-bellwether
 - [Phase 02]: validate_dataframe() runs as quality gate on aggregates but does not filter rows -- aggregation writes full output
 - [Phase 02]: pipeline.py extract_sih() returns directory path (processed_dir) for multi-file output pattern
+- [Phase 02]: Professional data uses custom validation (cod_ibge + year scope) instead of standard validate_dataframe() -- no_duplicate_keys check inappropriate for per-professional rows
+- [Phase 02]: PF download is best-effort PySUS wrapper -- graceful degradation if DATASUS FTP unavailable
 
 ### Pending Todos
 
@@ -101,6 +106,8 @@ None yet.
 
 Last session: 2026-04-02T01:21:10.980Z
 Stopped at: Completed 02-02-PLAN.md (SIH aggregation)
+Last session: 2026-04-02T01:23:06.635Z
+Stopped at: Completed 02-04-PLAN.md (CNES PF professional extraction)
 Last session: 2026-04-02T01:13:10.093Z
 Stopped at: Completed 02-03-PLAN.md (CNES facility extraction)
 Resume file: None
