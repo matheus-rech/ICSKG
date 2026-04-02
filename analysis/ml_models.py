@@ -360,6 +360,40 @@ def cross_validate_model(
 
 
 # ---------------------------------------------------------------------------
+# Fold-level CI computation
+# ---------------------------------------------------------------------------
+
+def _compute_fold_ci(
+    fold_metrics: list[dict],
+    metric_name: str,
+) -> dict:
+    """Compute mean +/- SD (95 % CI) for a metric across CV folds.
+
+    Parameters
+    ----------
+    fold_metrics : list[dict]
+        List of per-fold metric dicts (from cross_validate_model).
+    metric_name : str
+        Key to extract from each fold dict (e.g. 'rmse', 'r2', 'mae').
+
+    Returns
+    -------
+    dict
+        Keys: mean, sd, ci_lower, ci_upper.
+    """
+    from analysis.reporting import mean_ci  # noqa: PLC0415
+
+    values = np.array([d[metric_name] for d in fold_metrics if metric_name in d])
+    result = mean_ci(values)
+    return {
+        "mean": result["mean"],
+        "sd": result["sd"],
+        "ci_lower": result["ci_lower"],
+        "ci_upper": result["ci_upper"],
+    }
+
+
+# ---------------------------------------------------------------------------
 # Run All Models
 # ---------------------------------------------------------------------------
 
@@ -450,6 +484,39 @@ def run_all_models(
     csv_path = out_dir / "ml_metrics.csv"
     metrics_df.to_csv(csv_path, index=False)
     logger.info("Metrics saved to %s (%d rows)", csv_path, len(metrics_df))
+
+    # ---------------------------------------------------------------
+    # Summary CSV: mean +/- SD (95 % CI) per (model, outcome, metric)
+    # ---------------------------------------------------------------
+    summary_rows = []
+    for model_type in model_types:
+        for outcome in OUTCOMES:
+            fold_results = [
+                m for m in all_metrics
+                if m["model"] == model_type and m["outcome"] == outcome
+            ]
+            if not fold_results:
+                continue
+            for metric_name in ["rmse", "r2", "mae"]:
+                ci = _compute_fold_ci(fold_results, metric_name)
+                summary_rows.append({
+                    "model": model_type,
+                    "outcome": outcome,
+                    "metric": metric_name,
+                    "mean": ci["mean"],
+                    "sd": ci["sd"],
+                    "ci_lower": ci["ci_lower"],
+                    "ci_upper": ci["ci_upper"],
+                })
+
+    if summary_rows:
+        summary_df = pd.DataFrame(summary_rows)
+        summary_path = out_dir / "ml_metrics_summary.csv"
+        summary_df.to_csv(summary_path, index=False)
+        logger.info(
+            "ML metrics summary saved to %s (%d rows)",
+            summary_path, len(summary_df),
+        )
 
     return models_dict, metrics_df
 

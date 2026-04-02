@@ -463,6 +463,10 @@ def run_dose_response(
         n_obs=(outcome, "count"),
     ).reset_index(drop=True)
 
+    # Add 95 % CI columns to the binned output
+    binned["ci_lower"] = binned["mean_outcome"] - 1.96 * binned["se_outcome"]
+    binned["ci_upper"] = binned["mean_outcome"] + 1.96 * binned["se_outcome"]
+
     # Polynomial fit (degree 3) on the raw data for predicted values
     coeffs = np.polyfit(subset["cuds"].values, subset[outcome].values, deg=3)
     poly = np.poly1d(coeffs)
