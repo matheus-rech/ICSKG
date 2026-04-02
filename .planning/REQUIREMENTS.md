@@ -63,10 +63,10 @@
 
 ### Statistical Analysis
 
-- [ ] **STAT-01**: Two-way fixed-effects panel regression (municipality FE + year FE) of CUDS → each LCoGS outcome
-- [ ] **STAT-02**: Cluster-robust standard errors at municipality level for all regressions
-- [ ] **STAT-03**: Hausman test for fixed vs random effects selection (reported in supplement)
-- [ ] **STAT-04**: Dose-response analysis showing non-linear CUDS-LCoGS relationships
+- [x] **STAT-01**: Two-way fixed-effects panel regression (municipality FE + year FE) of CUDS → each LCoGS outcome
+- [x] **STAT-02**: Cluster-robust standard errors at municipality level for all regressions
+- [x] **STAT-03**: Hausman test for fixed vs random effects selection (reported in supplement)
+- [x] **STAT-04**: Dose-response analysis showing non-linear CUDS-LCoGS relationships
 
 ### Machine Learning
 
@@ -161,10 +161,10 @@
 | LCOG-04 | Phase 5 | Complete |
 | LCOG-05 | Phase 5 | Complete |
 | LCOG-06 | Phase 5 | Complete |
-| STAT-01 | Phase 6 | Pending |
-| STAT-02 | Phase 6 | Pending |
-| STAT-03 | Phase 6 | Pending |
-| STAT-04 | Phase 6 | Pending |
+| STAT-01 | Phase 6 | Complete |
+| STAT-02 | Phase 6 | Complete |
+| STAT-03 | Phase 6 | Complete |
+| STAT-04 | Phase 6 | Complete |
 | MLMD-01 | Phase 7 | Pending |
 | MLMD-02 | Phase 7 | Pending |
 | MLMD-03 | Phase 7 | Pending |

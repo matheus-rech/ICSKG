@@ -138,7 +138,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 07-01-PLAN.md — PanelOLS two-way FE regressions, cluster-robust SEs, Hausman test, dose-response, sensitivity analyses
+- [x] 07-01-PLAN.md — PanelOLS two-way FE regressions, cluster-robust SEs, Hausman test, dose-response, sensitivity analyses
 
 ### Phase 8: Machine Learning Models
 **Goal**: Random Forest and XGBoost dose-response models are trained, cross-validated, and interpreted with SHAP values, providing dimension-level feature importance for all 6 LCoGS outcomes

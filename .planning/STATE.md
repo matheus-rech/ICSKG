@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 06-01-PLAN.md (LCoGS indicators)
-last_updated: "2026-04-02T04:08:07.842Z"
+stopped_at: Completed 07-01-PLAN.md (panel regressions, Hausman, dose-response, sensitivity)
+last_updated: "2026-04-02T04:19:57.663Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 10
-  completed_phases: 6
-  total_plans: 16
-  completed_plans: 16
+  completed_phases: 7
+  total_plans: 18
+  completed_plans: 17
   percent: 93
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-01)
 
 **Core value:** Reproducible, publicly-sourced database proving whether municipal urban development predicts surgical system performance — first subnational cross-reference of urban development composite indices with surgical indicators.
-**Current focus:** Phase 04 — panel-assembly-validation
+**Current focus:** Phase 07 — statistical-analysis
 
 ## Current Position
 
-Phase: 7
-Plan: Not started
+Phase: 07 (statistical-analysis) — EXECUTING
+Plan: 1 of 1
 Status: Phase complete — ready for verification
 Last activity: 2026-04-02
 
@@ -68,6 +68,7 @@ Progress: [█████████░] 93%
 | Phase 04 P02 | 6min | 2 tasks | 4 files |
 | Phase 05 P01 | 4min | 2 tasks | 3 files |
 | Phase 06 P01 | 5min | 2 tasks | 3 files |
+| Phase 07 P01 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -118,6 +119,8 @@ Recent decisions affecting current work:
 - [Phase 06]: CATASTROPHIC_THRESHOLD = 0.10 (10% GDP/cap) for LCoGS-6 ecological proxy
 - [Phase 06]: Municipality centroids via geobr (IBGE 2022 shapefiles) with module-level cache for LCoGS-1 haversine distances
 - [Phase 06]: LCoGS-4 POMR suppressed to NaN for <10 surgical events; LCoGS-5/6 ecological-proxy caveats in lcogs_metadata
+- [Phase 07]: PanelOLS entity_effects+time_effects for two-way FE; cluster_entity=True for municipality-level SE clustering
+- [Phase 07]: Hausman test via manual chi2 (b_FE-b_RE covariance difference); degree-3 polynomial for dose-response
 
 ### Pending Todos
 
@@ -132,8 +135,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T04:00:31.395Z
-Stopped at: Completed 06-01-PLAN.md (LCoGS indicators)
+Last session: 2026-04-02T04:19:57.660Z
+Stopped at: Completed 07-01-PLAN.md (panel regressions, Hausman, dose-response, sensitivity)
 Last session: 2026-04-02T02:11:59.882Z
 Stopped at: Completed 03-02-PLAN.md
 Last session: 2026-04-02T02:10:44.742Z
