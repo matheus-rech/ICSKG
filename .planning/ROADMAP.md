@@ -170,6 +170,24 @@ Plans:
 - [ ] 09-01-PLAN.md — Moran's I spatial autocorrelation, CUDS choropleth, regional disparity analysis, LCoGS heatmaps
 - [x] 09-01-PLAN.md — Moran's I spatial autocorrelation, CUDS choropleth, regional disparity analysis, LCoGS heatmaps
 
+### Phase 09.1: Methodology Enhancements (INSERTED)
+
+**Goal:** Enhance the analysis pipeline with EconML causal inference, age-standardized rates, health region aggregation, PCA composite sensitivity, USD conversion, confidence intervals, and dispersion measures on all outputs
+**Depends on**: Phase 9
+**Requirements**: METH-01, METH-02, METH-03, METH-04, METH-05, METH-06, METH-07
+**Success Criteria** (what must be TRUE):
+  1. EconML DML and Causal Forest estimate CUDS→LCoGS treatment effects with confidence intervals
+  2. Age-standardized surgical rates per 100,000 computed using IBGE standard age bands and gender stratification
+  3. All indicators aggregated at health region level (~450 Regiões de Saúde) in addition to municipality level
+  4. PCA-derived composite score computed and compared with geometric-mean CUDS (correlation reported)
+  5. All monetary values available in both constant 2023 BRL and USD
+  6. Every summary statistic includes SD/SE or IQR plus 95% confidence intervals
+  7. Network distance metrics (MUNIC_RES→MUNIC_MOV travel distances) summarized per municipality-year
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 09.1 to break down)
+
 ### Phase 10: Publication Package
 **Goal**: A complete, submission-ready BMJ Global Health package exists — all required figures, tables, compliance checklists, data dictionary, and a Zenodo-archived public release
 **Depends on**: Phase 7, Phase 8, Phase 9
