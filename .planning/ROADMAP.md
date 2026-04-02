@@ -94,7 +94,7 @@ Plans:
 
 Plans:
 - [x] 04-01-PLAN.md — IPCA deflation module + scaffold-first panel assembly with validation gate
-- [ ] 04-02-PLAN.md — IFGF multiple imputation, CIMI-aligned SQLite v3 builder, missingness documentation
+- [x] 04-02-PLAN.md — IFGF multiple imputation, CIMI-aligned SQLite v3 builder, missingness documentation
 
 ### Phase 5: Dimension Computation & CUDS
 **Goal**: Every municipality-year row in SQLite carries a valid score for all 8 active CIMI dimensions and a CUDS composite that reflects the geometric mean of within-year normalized scores

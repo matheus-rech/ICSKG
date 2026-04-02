@@ -41,9 +41,9 @@
 - [x] **PANL-01**: Municipality-year merge producing one row per municipality per year (assert 5,570 rows/year after merge)
 - [x] **PANL-02**: Validation report (validation_report.json) with per-source quality metrics
 - [x] **PANL-03**: Quarantine directory for flagged rows excluded from panel
-- [ ] **PANL-04**: SQLite database with municipal_health table (50,130 rows target), dimension_metadata, municipality_lookup tables
-- [ ] **PANL-05**: IFGF multiple imputation for ~420 MNAR municipalities per year using auxiliary variables (GDP, region, population)
-- [ ] **PANL-06**: Missing data documentation table showing missingness rates per variable per year (RECORD item 12.1)
+- [x] **PANL-04**: SQLite database with municipal_health table (50,130 rows target), dimension_metadata, municipality_lookup tables
+- [x] **PANL-05**: IFGF multiple imputation for ~420 MNAR municipalities per year using auxiliary variables (GDP, region, population)
+- [x] **PANL-06**: Missing data documentation table showing missingness rates per variable per year (RECORD item 12.1)
 
 ### Dimension Computation
 
@@ -148,9 +148,9 @@
 | PANL-01 | Phase 3 | Complete |
 | PANL-02 | Phase 3 | Complete |
 | PANL-03 | Phase 3 | Complete |
-| PANL-04 | Phase 3 | Pending |
-| PANL-05 | Phase 3 | Pending |
-| PANL-06 | Phase 3 | Pending |
+| PANL-04 | Phase 3 | Complete |
+| PANL-05 | Phase 3 | Complete |
+| PANL-06 | Phase 3 | Complete |
 | DIMS-01 | Phase 4 | Pending |
 | DIMS-02 | Phase 4 | Pending |
 | DIMS-03 | Phase 4 | Pending |
