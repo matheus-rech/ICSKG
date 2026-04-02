@@ -103,12 +103,31 @@ CREATE TABLE IF NOT EXISTS imputation_log (
 );
 """
 
+DDL_DIMENSION_SCORES = """
+CREATE TABLE IF NOT EXISTS dimension_scores (
+    cod_ibge       TEXT    NOT NULL,
+    year           INTEGER NOT NULL,
+    D1             REAL,
+    D2             REAL,
+    D3             REAL,
+    D4             REAL,
+    D5             REAL,
+    D6             REAL,
+    D7             REAL,
+    D9             REAL,
+    cuds           REAL,
+    n_dimensions   INTEGER,
+    PRIMARY KEY (cod_ibge, year)
+);
+"""
+
 ALL_DDL = [
     DDL_MUNICIPAL_HEALTH,
     DDL_DIMENSION_METADATA,
     DDL_MUNICIPALITY_LOOKUP,
     DDL_DEFLATION_LOG,
     DDL_IMPUTATION_LOG,
+    DDL_DIMENSION_SCORES,
 ]
 
 
@@ -226,7 +245,7 @@ def create_schema(conn: sqlite3.Connection) -> None:
     for ddl in ALL_DDL:
         cur.executescript(ddl)
     conn.commit()
-    logger.info("Schema v3 initialised (5 tables created)")
+    logger.info("Schema v3 initialised (6 tables created)")
 
 
 def seed_dimension_metadata(conn: sqlite3.Connection) -> None:
