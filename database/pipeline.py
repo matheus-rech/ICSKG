@@ -25,12 +25,55 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from database.validation import validate_dataframe
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)-8s  %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+
+def load_config(config_path: Path | None = None) -> dict:
+    """Load data path configuration from config.yaml.
+
+    Falls back to data_sources/ defaults if config.yaml is absent,
+    ensuring the project works for any researcher without a NAS mount.
+    """
+    if config_path is None:
+        config_path = Path(__file__).parent.parent / "config.yaml"
+    if not config_path.exists():
+        logger.info("config.yaml not found — using default paths (data_sources/)")
+        return {
+            "data_root": "data_sources",
+            "raw_dir": "raw",
+            "processed_dir": "processed",
+            "quarantine_dir": "quarantine",
+            "db_dir": "database",
+            "output_dir": "analysis/results",
+        }
+    try:
+        import yaml  # noqa: PLC0415
+        with config_path.open() as f:
+            cfg = yaml.safe_load(f)
+        logger.info("Loaded configuration from %s", config_path)
+        return cfg
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not load config.yaml: %s — using defaults", exc)
+        return {
+            "data_root": "data_sources",
+            "raw_dir": "raw",
+            "processed_dir": "processed",
+            "quarantine_dir": "quarantine",
+            "db_dir": "database",
+            "output_dir": "analysis/results",
+        }
+
 
 # ---------------------------------------------------------------------------
 # Stage definitions
@@ -53,34 +96,172 @@ def _stage_banner(name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Validation helper
+# ---------------------------------------------------------------------------
+
+def _validate_stage_output(
+    path: Path,
+    source_name: str,
+    year: int,
+    quarantine_dir: Path | None = None,
+) -> Path:
+    """Load an extracted file, validate it, and write the clean version back.
+
+    Uses strict=False (quarantine mode) so that invalid rows are quarantined
+    rather than raising an exception.  Returns *path* unchanged (the file is
+    overwritten in-place with the clean DataFrame).
+
+    If the extracted file lacks required columns (cod_ibge, year) the
+    validation will quarantine the entire DataFrame and log a warning.
+    """
+    try:
+        import pandas as pd  # noqa: PLC0415
+    except ImportError:
+        logger.warning("pandas not available -- skipping validation for %s", source_name)
+        return path
+
+    if not path.exists():
+        logger.warning("Validation skipped for %s: file not found at %s", source_name, path)
+        return path
+
+    try:
+        if path.suffix == ".parquet":
+            df = pd.read_parquet(path)
+        elif path.suffix in (".xlsx", ".xls"):
+            df = pd.read_excel(path, dtype={"Cod_IBGE": str})
+        elif path.suffix == ".csv":
+            df = pd.read_csv(path, dtype=str)
+        else:
+            logger.warning("Validation skipped for %s: unsupported format %s", source_name, path.suffix)
+            return path
+
+        # Attempt column renaming so validation can find cod_ibge
+        from database.utils import rename_municipality_column  # noqa: PLC0415
+
+        try:
+            df = rename_municipality_column(df)
+        except ValueError:
+            logger.warning(
+                "Validation [%s]: no municipality code column found -- "
+                "validation will flag schema_conformance",
+                source_name,
+            )
+
+        # Ensure 'year' column exists for validation
+        if "year" not in df.columns:
+            df["year"] = year
+
+        clean_df, report = validate_dataframe(
+            df,
+            source_name=source_name,
+            strict=False,
+            quarantine_dir=quarantine_dir,
+        )
+        logger.info(
+            "Validation [%s]: %d/%d rows valid",
+            source_name,
+            report.n_valid,
+            report.n_rows_input,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Validation failed for %s: %s", source_name, exc)
+
+    return path
+
+
+# ---------------------------------------------------------------------------
 # Extraction stubs
 # (full implementations live in the source-specific scripts under scripts/)
 # ---------------------------------------------------------------------------
 
 def extract_sih(year: int, month: int, raw_dir: Path) -> Path:
-    """Download and parse SIH inpatient records for the given year-month.
+    """Extract SIH inpatient records from FIOCRUZ BigData ETLSIH CSVs.
 
-    Returns the path to the parquet file written to *raw_dir*.
+    Reads CSV files from NAS (or local raw_dir), applies column projection,
+    normalizes municipality codes, and writes per-UF-month Parquet files.
+    Returns the path to the processed SIH directory for the given month.
     """
     _stage_banner("extract_sih")
-    from scripts.sih_batch_v2 import process_month  # noqa: PLC0415
+    from scripts.sih_extract import process_sih_month  # noqa: PLC0415
 
-    output = raw_dir / f"sih_{year}{month:02d}.parquet"
-    logger.info("Extracting SIH %04d-%02d → %s", year, month, output)
-    process_month(year=year, month=month, output_path=output)
-    return output
+    # Resolve output directory from config
+    cfg = load_config()
+    data_root = Path(cfg.get("data_root", "data_sources"))
+    processed_dir = data_root / cfg.get("processed_dir", "processed") / "sih"
+
+    logger.info("Extracting SIH %04d-%02d from %s", year, month, raw_dir)
+    results = process_sih_month(
+        year=year,
+        month=month,
+        raw_dir=raw_dir,
+        output_dir=processed_dir,
+        workers=1,
+        skip_existing=True,
+    )
+
+    ok_count = sum(1 for r in results if r["status"] == "ok")
+    total_rows = sum(r["rows"] for r in results)
+    logger.info(
+        "SIH %04d-%02d: %d/%d UFs processed, %d total rows",
+        year, month, ok_count, len(results), total_rows,
+    )
+    return processed_dir
 
 
 def extract_cnes(year: int, month: int, raw_dir: Path) -> Path:
-    """Download CNES facility snapshot for the given year-month."""
-    _stage_banner("extract_cnes")
-    output = raw_dir / f"cnes_{year}{month:02d}.parquet"
-    logger.info("Extracting CNES %04d-%02d → %s", year, month, output)
-    # Delegated to continue_raw_download which handles both SIH and CNES
-    from scripts.continue_raw_download import download_month  # noqa: PLC0415
+    """Extract CNES facility and professional records.
 
-    download_month(source="CNES", year=year, month=month, output_path=output)
-    return output
+    Reads CNES ST (establishment) files from FIOCRUZ BigData ETLCNES CSVs
+    and writes facilities.parquet.  If CNES PF (professional) files are
+    available, also writes professionals.parquet.
+
+    Returns the processed CNES output directory.
+    """
+    _stage_banner("extract_cnes")
+    from scripts.cnes_extract import (  # noqa: PLC0415
+        extract_cnes_facilities,
+        extract_cnes_professionals,
+    )
+
+    cfg = load_config()
+    data_root = Path(cfg.get("data_root", "data_sources"))
+    processed_dir = data_root / cfg.get("processed_dir", "processed") / "cnes"
+    cnes_raw_dir = raw_dir / "cnes"
+
+    # ST facilities
+    logger.info("Extracting CNES facilities for %04d", year)
+    try:
+        fac_path = extract_cnes_facilities(
+            input_dir=cnes_raw_dir,
+            output_dir=processed_dir,
+            year=year,
+        )
+        logger.info("CNES facilities -> %s", fac_path)
+    except Exception as exc:  # noqa: BLE001
+        logger.error("CNES facility extraction failed: %s", exc)
+
+    # PF professionals (best-effort -- files may not be downloaded yet)
+    pf_dir = raw_dir / "cnes_pf"
+    if pf_dir.exists() and any(pf_dir.iterdir()):
+        logger.info("Extracting CNES professionals for %04d", year)
+        try:
+            prof_path = extract_cnes_professionals(
+                input_dir=pf_dir,
+                output_dir=processed_dir,
+                year=year,
+            )
+            logger.info("CNES professionals -> %s", prof_path)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("CNES professional extraction failed: %s", exc)
+    else:
+        logger.warning(
+            "CNES PF directory not found or empty at %s -- "
+            "professionals.parquet will not be generated. "
+            "Download PF files via: python scripts/cnes_extract.py --download-pf",
+            pf_dir,
+        )
+
+    return processed_dir
 
 
 def extract_ans(data_dir: Path) -> Path:
@@ -157,14 +338,22 @@ def transform_merge(
         pd.DataFrame().to_parquet(output)
         return output
 
-    # Simple outer join on municipality code (cod_ibge / Cod_IBGE)
+    # Normalise municipality codes using shared utilities
+    from database.utils import rename_municipality_column, normalize_cod_ibge  # noqa: PLC0415
+
+    # Outer join on canonical municipality code (cod_ibge)
     merged = None
     for label, df in frames.items():
-        # Normalise municipality column name
-        for col in ("Cod_IBGE", "CD_MUNICIPIO", "cod_ibge"):
-            if col in df.columns:
-                df = df.rename(columns={col: "cod_ibge"})
-                break
+        # Rename source-specific column to canonical 'cod_ibge'
+        try:
+            df = rename_municipality_column(df)
+        except ValueError:
+            logger.warning(
+                "Source %s has no municipality code column – skipping.", label
+            )
+            continue
+        # Canonicalize to 7-digit zero-padded string
+        df["cod_ibge"] = normalize_cod_ibge(df["cod_ibge"])
         df = df.add_prefix(f"{label}_").rename(columns={f"{label}_cod_ibge": "cod_ibge"})
         merged = df if merged is None else merged.merge(df, on="cod_ibge", how="outer")
 
@@ -206,6 +395,7 @@ def run_pipeline(
     data_dir: Path = Path("data_sources"),
     raw_dir: Path = Path("data_sources/raw"),
     processed_dir: Path = Path("data_sources/processed"),
+    quarantine_dir: Path = Path("data_sources/quarantine"),
     db_dir: Path = Path("database"),
     stages: list = None,
 ) -> None:
@@ -226,24 +416,32 @@ def run_pipeline(
     if "extract_sih" in stages:
         try:
             results["sih"] = extract_sih(year, month, raw_dir)
+            if results["sih"]:
+                _validate_stage_output(results["sih"], "sih", year, quarantine_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("extract_sih failed: %s", exc)
 
     if "extract_cnes" in stages:
         try:
             results["cnes"] = extract_cnes(year, month, raw_dir)
+            if results["cnes"]:
+                _validate_stage_output(results["cnes"], "cnes", year, quarantine_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("extract_cnes failed: %s", exc)
 
     if "extract_ans" in stages:
         try:
             results["ans"] = extract_ans(data_dir)
+            if results["ans"]:
+                _validate_stage_output(results["ans"], "ans", year, quarantine_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("extract_ans failed: %s", exc)
 
     if "extract_ifgf" in stages:
         try:
             results["ifgf"] = extract_ifgf(data_dir)
+            if results["ifgf"]:
+                _validate_stage_output(results["ifgf"], "ifgf", year, quarantine_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("extract_ifgf failed: %s", exc)
 
@@ -300,8 +498,8 @@ def main(argv=None):
     group.add_argument("--start", metavar="YYYY-MM", help="Start of date range")
 
     parser.add_argument("--end", metavar="YYYY-MM", help="End of date range (required with --start)")
-    parser.add_argument("--data-dir", default="data_sources", help="Root data directory")
-    parser.add_argument("--db-dir", default="database", help="Database output directory")
+    parser.add_argument("--data-dir", default=None, help="Root data directory (overrides config.yaml)")
+    parser.add_argument("--db-dir", default=None, help="Database output directory (overrides config.yaml)")
     parser.add_argument(
         "--stages",
         nargs="+",
@@ -311,8 +509,20 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    data_dir = Path(args.data_dir)
-    db_dir = Path(args.db_dir)
+    # Load configuration from config.yaml (falls back to defaults)
+    cfg = load_config()
+    data_root = Path(cfg.get("data_root", "data_sources"))
+
+    # CLI arguments override config.yaml values
+    data_dir = Path(args.data_dir) if args.data_dir else data_root
+    raw_dir = data_dir / cfg.get("raw_dir", "raw")
+    processed_dir = data_dir / cfg.get("processed_dir", "processed")
+    quarantine_dir = data_dir / cfg.get("quarantine_dir", "quarantine")
+    db_dir = Path(args.db_dir) if args.db_dir else Path(cfg.get("db_dir", "database"))
+
+    logger.info("Data root: %s", data_dir)
+    logger.info("Raw: %s | Processed: %s | Quarantine: %s | DB: %s",
+                raw_dir, processed_dir, quarantine_dir, db_dir)
 
     if args.year_month:
         y, m = map(int, args.year_month.split("-"))
@@ -329,6 +539,9 @@ def main(argv=None):
             year=year,
             month=month,
             data_dir=data_dir,
+            raw_dir=raw_dir,
+            processed_dir=processed_dir,
+            quarantine_dir=quarantine_dir,
             db_dir=db_dir,
             stages=args.stages,
         )
