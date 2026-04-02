@@ -1,0 +1,19 @@
+# ICSKG-BR Data Path Configuration
+# Copy this file to config.yaml and adjust paths for your machine.
+# If config.yaml is absent, pipeline.py defaults to data_sources/ (relative to project root).
+
+# NAS or local data root. Set to your NAS mount path, e.g.:
+#   smb://synology-rech._smb._tcp.local/docker/Downloads
+# Or a local path such as /Volumes/NAS/Downloads or /mnt/nas/downloads
+data_root: "data_sources"
+
+# Subdirectories under data_root (relative paths from data_root)
+raw_dir: "raw"
+processed_dir: "processed"
+quarantine_dir: "quarantine"
+
+# Database output directory (relative to project root)
+db_dir: "database"
+
+# Output directory for analysis figures and tables
+output_dir: "analysis/results"

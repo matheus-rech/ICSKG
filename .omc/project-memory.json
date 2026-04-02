@@ -1,0 +1,401 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775077627662,
+  "projectRoot": "/Users/matheusrech/untitled folder 6/ICSKG",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "scripts"
+    ],
+    "gitBranches": {
+      "defaultBranch": "meta",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "analysis": {
+      "path": "analysis",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775077627655,
+      "keyFiles": [
+        "icskg_analysis_pipeline.py"
+      ]
+    },
+    "data_sources": {
+      "path": "data_sources",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775077627656,
+      "keyFiles": [
+        "README.md"
+      ]
+    },
+    "database": {
+      "path": "database",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1775077627656,
+      "keyFiles": [
+        "build_database_v2.py",
+        "database_metadata.json",
+        "pipeline.py"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 2,
+      "lastAccessed": 1775077627656,
+      "keyFiles": [
+        "ICSKG-BR_Methodology_and_Gap_Analysis.md",
+        "README.md"
+      ]
+    },
+    "output": {
+      "path": "output",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775077627657,
+      "keyFiles": [
+        "README.md"
+      ]
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 3,
+      "lastAccessed": 1775077627657,
+      "keyFiles": [
+        "continue_raw_download.py",
+        "download_ans.py",
+        "sih_batch_v2.py"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "database/pipeline.py",
+      "accessCount": 34,
+      "lastAccessed": 1775091474096,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 27,
+      "lastAccessed": 1775091480731,
+      "type": "directory"
+    },
+    {
+      "path": ".planning/REQUIREMENTS.md",
+      "accessCount": 16,
+      "lastAccessed": 1775091458047,
+      "type": "file"
+    },
+    {
+      "path": ".planning/PROJECT.md",
+      "accessCount": 15,
+      "lastAccessed": 1775091459370,
+      "type": "file"
+    },
+    {
+      "path": ".planning/ROADMAP.md",
+      "accessCount": 14,
+      "lastAccessed": 1775092017666,
+      "type": "file"
+    },
+    {
+      "path": "extract_lcogs1.py",
+      "accessCount": 10,
+      "lastAccessed": 1775082984005,
+      "type": "file"
+    },
+    {
+      "path": ".planning/research/STACK.md",
+      "accessCount": 9,
+      "lastAccessed": 1775083150637,
+      "type": "file"
+    },
+    {
+      "path": ".planning/research/PITFALLS.md",
+      "accessCount": 9,
+      "lastAccessed": 1775083159295,
+      "type": "file"
+    },
+    {
+      "path": ".planning/STATE.md",
+      "accessCount": 9,
+      "lastAccessed": 1775091457268,
+      "type": "file"
+    },
+    {
+      "path": "analysis/icskg_analysis_pipeline.py",
+      "accessCount": 8,
+      "lastAccessed": 1775079282582,
+      "type": "file"
+    },
+    {
+      "path": "database/utils.py",
+      "accessCount": 8,
+      "lastAccessed": 1775091466815,
+      "type": "file"
+    },
+    {
+      "path": ".planning/research/ARCHITECTURE.md",
+      "accessCount": 7,
+      "lastAccessed": 1775083158451,
+      "type": "file"
+    },
+    {
+      "path": ".planning/codebase/CONVENTIONS.md",
+      "accessCount": 7,
+      "lastAccessed": 1775083159664,
+      "type": "file"
+    },
+    {
+      "path": ".planning/codebase/STRUCTURE.md",
+      "accessCount": 7,
+      "lastAccessed": 1775083161414,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 7,
+      "lastAccessed": 1775091460072,
+      "type": "file"
+    },
+    {
+      "path": ".planning/research/SUMMARY.md",
+      "accessCount": 6,
+      "lastAccessed": 1775083183412,
+      "type": "file"
+    },
+    {
+      "path": ".planning/phases/01-foundation/01-VERIFICATION.md",
+      "accessCount": 6,
+      "lastAccessed": 1775087825930,
+      "type": "file"
+    },
+    {
+      "path": ".planning/phases/01-foundation/01-CONTEXT.md",
+      "accessCount": 6,
+      "lastAccessed": 1775087915399,
+      "type": "file"
+    },
+    {
+      "path": "database/validation.py",
+      "accessCount": 6,
+      "lastAccessed": 1775091467480,
+      "type": "file"
+    },
+    {
+      "path": "scripts/sih_batch_v2.py",
+      "accessCount": 6,
+      "lastAccessed": 1775091474493,
+      "type": "file"
+    },
+    {
+      "path": ".planning/codebase/ARCHITECTURE.md",
+      "accessCount": 5,
+      "lastAccessed": 1775079097986,
+      "type": "file"
+    },
+    {
+      "path": ".planning/research/FEATURES.md",
+      "accessCount": 5,
+      "lastAccessed": 1775080355334,
+      "type": "file"
+    },
+    {
+      "path": ".planning/phases/01-foundation/01-01-PLAN.md",
+      "accessCount": 5,
+      "lastAccessed": 1775087642571,
+      "type": "file"
+    },
+    {
+      "path": "scripts/continue_raw_download.py",
+      "accessCount": 5,
+      "lastAccessed": 1775090849927,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 4,
+      "lastAccessed": 1775078086014,
+      "type": "file"
+    },
+    {
+      "path": ".planning/phases/01-foundation/01-02-PLAN.md",
+      "accessCount": 4,
+      "lastAccessed": 1775087643386,
+      "type": "file"
+    },
+    {
+      "path": ".planning/phases/01-foundation/01-03-PLAN.md",
+      "accessCount": 4,
+      "lastAccessed": 1775087643718,
+      "type": "file"
+    },
+    {
+      "path": ".planning/phases/01-foundation/01-04-PLAN.md",
+      "accessCount": 4,
+      "lastAccessed": 1775087644166,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_amc_crosswalk.py",
+      "accessCount": 4,
+      "lastAccessed": 1775087723979,
+      "type": "file"
+    },
+    {
+      "path": "config.example.yaml",
+      "accessCount": 4,
+      "lastAccessed": 1775091481277,
+      "type": "file"
+    },
+    {
+      "path": "scripts/download_ans.py",
+      "accessCount": 3,
+      "lastAccessed": 1775077786478,
+      "type": "file"
+    },
+    {
+      "path": ".planning/config.json",
+      "accessCount": 3,
+      "lastAccessed": 1775082701883,
+      "type": "file"
+    },
+    {
+      "path": "database/database_metadata.json",
+      "accessCount": 3,
+      "lastAccessed": 1775087732004,
+      "type": "file"
+    },
+    {
+      "path": "pyproject.toml",
+      "accessCount": 3,
+      "lastAccessed": 1775090849792,
+      "type": "file"
+    },
+    {
+      "path": ".planning/codebase/TESTING.md",
+      "accessCount": 2,
+      "lastAccessed": 1775077848690,
+      "type": "file"
+    },
+    {
+      "path": ".planning/codebase/STACK.md",
+      "accessCount": 2,
+      "lastAccessed": 1775079088784,
+      "type": "file"
+    },
+    {
+      "path": ".planning/codebase/CONCERNS.md",
+      "accessCount": 2,
+      "lastAccessed": 1775079106304,
+      "type": "file"
+    },
+    {
+      "path": ".planning/phases/01-foundation/01-04-SUMMARY.md",
+      "accessCount": 2,
+      "lastAccessed": 1775087644994,
+      "type": "file"
+    },
+    {
+      "path": ".python-version",
+      "accessCount": 2,
+      "lastAccessed": 1775087655663,
+      "type": "file"
+    },
+    {
+      "path": "data_sources/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1775077774776,
+      "type": "file"
+    },
+    {
+      "path": "analysis/results/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1775077774979,
+      "type": "file"
+    },
+    {
+      "path": "output/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1775077775211,
+      "type": "file"
+    },
+    {
+      "path": ".planning/codebase/INTEGRATIONS.md",
+      "accessCount": 1,
+      "lastAccessed": 1775077830639,
+      "type": "file"
+    },
+    {
+      "path": "docs/ICSKG-BR_Methodology_and_Gap_Analysis.md",
+      "accessCount": 1,
+      "lastAccessed": 1775078590558,
+      "type": "file"
+    },
+    {
+      "path": ".planning/phases/01-foundation/01-DISCUSSION-LOG.md",
+      "accessCount": 1,
+      "lastAccessed": 1775082399824,
+      "type": "file"
+    },
+    {
+      "path": ".planning/phases/01-foundation/01-01-SUMMARY.md",
+      "accessCount": 1,
+      "lastAccessed": 1775086975443,
+      "type": "file"
+    },
+    {
+      "path": ".planning/phases/01-foundation/01-02-SUMMARY.md",
+      "accessCount": 1,
+      "lastAccessed": 1775086975809,
+      "type": "file"
+    },
+    {
+      "path": ".planning/phases/01-foundation/01-03-SUMMARY.md",
+      "accessCount": 1,
+      "lastAccessed": 1775086975942,
+      "type": "file"
+    },
+    {
+      "path": "config.yaml",
+      "accessCount": 1,
+      "lastAccessed": 1775086996061,
+      "type": "file"
+    },
+    {
+      "path": "data_sources/amc_crosswalk_2015_2023.csv",
+      "accessCount": 1,
+      "lastAccessed": 1775087215829,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
