@@ -5,6 +5,8 @@ milestone_name: milestone
 status: executing
 stopped_at: Completed 02-01-PLAN.md (SIH extraction)
 last_updated: "2026-04-02T01:13:29.134Z"
+stopped_at: Completed 02-03-PLAN.md (CNES facility extraction)
+last_updated: "2026-04-02T01:13:10.096Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 10
@@ -57,6 +59,7 @@ Progress: [██████░░░░] 63%
 | Phase 01 P03 | 2min | 1 tasks | 3 files |
 | Phase 01 P04 | 2min | 1 tasks | 2 files |
 | Phase 02 P01 | 3min | 2 tasks | 4 files |
+| Phase 02 P03 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -80,6 +83,7 @@ Recent decisions affecting current work:
 - [Phase 01]: Lazy import of load_ibge_municipios inside validate_dataframe() to avoid circular dependency at module level
 - [Phase 02]: DuckDB read_csv_auto() for SIH column projection (27/235 cols)
 - [Phase 02]: MUNIC_MOV renamed to cod_ibge (treatment municipality); MUNIC_RES to cod_ibge_res
+- [Phase 02]: filter_bellwether_facilities() returns FULL DataFrame with is_bellwether column -- downstream can use both bellwether and non-bellwether
 
 ### Pending Todos
 
@@ -96,4 +100,6 @@ None yet.
 
 Last session: 2026-04-02T01:13:29.130Z
 Stopped at: Completed 02-01-PLAN.md (SIH extraction)
+Last session: 2026-04-02T01:13:10.093Z
+Stopped at: Completed 02-03-PLAN.md (CNES facility extraction)
 Resume file: None
