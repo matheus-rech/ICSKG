@@ -1,0 +1,7 @@
+{
+  "tool_name": "Edit",
+  "tool_input_preview": "{\"file_path\":\"/Users/matheusrech/untitled folder 6/ICSKG/.claude/worktrees/agent-aa95abf0/database/pipeline.py\",\"old_string\":\"def extract_sih(year: int, month: int, raw_dir: Path) -> Path:\\n    \\\"\\\"\\\"...",
+  "error": "ENOSPC: no space left on device, open '/Users/matheusrech/untitled folder 6/ICSKG/.claude/worktrees/agent-aa95abf0/database/pipeline.py'",
+  "timestamp": "2026-04-02T01:19:06.622Z",
+  "retry_count": 1
+}
