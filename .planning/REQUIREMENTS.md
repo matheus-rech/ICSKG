@@ -70,10 +70,10 @@
 
 ### Machine Learning
 
-- [ ] **MLMD-01**: Random Forest model predicting each LCoGS outcome from CIMI dimensions
-- [ ] **MLMD-02**: XGBoost model predicting each LCoGS outcome from CIMI dimensions
-- [ ] **MLMD-03**: 5-fold cross-validation stratified by macro-region (prevents geographic leakage)
-- [ ] **MLMD-04**: SHAP values for feature importance (dimension-level beeswarm plots)
+- [x] **MLMD-01**: Random Forest model predicting each LCoGS outcome from CIMI dimensions
+- [x] **MLMD-02**: XGBoost model predicting each LCoGS outcome from CIMI dimensions
+- [x] **MLMD-03**: 5-fold cross-validation stratified by macro-region (prevents geographic leakage)
+- [x] **MLMD-04**: SHAP values for feature importance (dimension-level beeswarm plots)
 
 ### Spatial Analysis
 
@@ -169,6 +169,14 @@
 | MLMD-02 | Phase 7 | Pending |
 | MLMD-03 | Phase 7 | Pending |
 | MLMD-04 | Phase 7 | Pending |
+| STAT-01 | Phase 6 | Pending |
+| STAT-02 | Phase 6 | Pending |
+| STAT-03 | Phase 6 | Pending |
+| STAT-04 | Phase 6 | Pending |
+| MLMD-01 | Phase 7 | Complete |
+| MLMD-02 | Phase 7 | Complete |
+| MLMD-03 | Phase 7 | Complete |
+| MLMD-04 | Phase 7 | Complete |
 | SPAT-01 | Phase 8 | Pending |
 | SPAT-02 | Phase 8 | Pending |
 | SPAT-03 | Phase 8 | Pending |
