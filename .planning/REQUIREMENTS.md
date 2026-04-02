@@ -77,10 +77,10 @@
 
 ### Spatial Analysis
 
-- [ ] **SPAT-01**: Moran's I spatial autocorrelation test on fixed-effects model residuals
-- [ ] **SPAT-02**: CUDS choropleth map of all municipalities (publication-ready, 300 DPI)
-- [ ] **SPAT-03**: Regional disparity analysis across 5 macro-regions (Norte, Nordeste, Centro-Oeste, Sudeste, Sul)
-- [ ] **SPAT-04**: LCoGS indicator heatmaps by region
+- [x] **SPAT-01**: Moran's I spatial autocorrelation test on fixed-effects model residuals
+- [x] **SPAT-02**: CUDS choropleth map of all municipalities (publication-ready, 300 DPI)
+- [x] **SPAT-03**: Regional disparity analysis across 5 macro-regions (Norte, Nordeste, Centro-Oeste, Sudeste, Sul)
+- [x] **SPAT-04**: LCoGS indicator heatmaps by region
 
 ### Publication Package
 
@@ -177,10 +177,10 @@
 | MLMD-02 | Phase 7 | Complete |
 | MLMD-03 | Phase 7 | Complete |
 | MLMD-04 | Phase 7 | Complete |
-| SPAT-01 | Phase 8 | Pending |
-| SPAT-02 | Phase 8 | Pending |
-| SPAT-03 | Phase 8 | Pending |
-| SPAT-04 | Phase 8 | Pending |
+| SPAT-01 | Phase 8 | Complete |
+| SPAT-02 | Phase 8 | Complete |
+| SPAT-03 | Phase 8 | Complete |
+| SPAT-04 | Phase 8 | Complete |
 | PUBL-01 | Phase 9 | Pending |
 | PUBL-02 | Phase 9 | Pending |
 | PUBL-03 | Phase 9 | Pending |

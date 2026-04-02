@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 6: LCoGS Indicators** - All 6 LCoGS surgical outcome indicators computed at municipality-year level and loaded into SQLite
 - [ ] **Phase 7: Statistical Analysis** - Two-way fixed-effects panel regressions with cluster-robust SEs, Hausman test, dose-response, and sensitivity analyses
 - [x] **Phase 8: Machine Learning Models** - Random Forest and XGBoost with region-stratified cross-validation and SHAP feature importance (completed 2026-04-02)
-- [ ] **Phase 9: Spatial Analysis** - Moran's I autocorrelation test, choropleth maps, and regional disparity analysis
+- [x] **Phase 9: Spatial Analysis** - Moran's I autocorrelation test, choropleth maps, and regional disparity analysis (completed 2026-04-02)
 - [ ] **Phase 10: Publication Package** - Publication-ready figures, tables, STROBE/RECORD checklists, data dictionary, and Zenodo release
 
 ## Phase Details
@@ -166,7 +166,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 09-01-PLAN.md — Moran's I spatial autocorrelation, CUDS choropleth, regional disparity analysis, LCoGS heatmaps
+- [x] 09-01-PLAN.md — Moran's I spatial autocorrelation, CUDS choropleth, regional disparity analysis, LCoGS heatmaps
 
 ### Phase 10: Publication Package
 **Goal**: A complete, submission-ready BMJ Global Health package exists — all required figures, tables, compliance checklists, data dictionary, and a Zenodo-archived public release
@@ -197,5 +197,5 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 | 6. LCoGS Indicators | 0/1 | Not started | - |
 | 7. Statistical Analysis | 0/1 | Not started | - |
 | 8. Machine Learning Models | 1/1 | Complete   | 2026-04-02 |
-| 9. Spatial Analysis | 0/1 | Not started | - |
+| 9. Spatial Analysis | 1/1 | Complete   | 2026-04-02 |
 | 10. Publication Package | 0/TBD | Not started | - |
