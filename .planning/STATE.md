@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-04-PLAN.md (RENAVAM + SIOPS + pipeline wiring)
-last_updated: "2026-04-02T02:28:52.213Z"
+stopped_at: Completed 04-01-PLAN.md (IPCA deflation + panel assembly)
+last_updated: "2026-04-02T02:50:58.463Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 10
   completed_phases: 3
-  total_plans: 12
-  completed_plans: 12
-  percent: 63
+  total_plans: 14
+  completed_plans: 13
+  percent: 93
 ---
 
 # Project State
@@ -21,19 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-01)
 
 **Core value:** Reproducible, publicly-sourced database proving whether municipal urban development predicts surgical system performance — first subnational cross-reference of urban development composite indices with surgical indicators.
-**Current focus:** Phase 03 — secondary-source-extraction
+**Current focus:** Phase 04 — panel-assembly-validation
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
-**Current focus:** Phase 2 — SIH & CNES Extraction
-Phase: 3 of 10 (secondary source extraction)
-Plan: Not started
-Status: Ready to execute
+Phase: 04 (panel-assembly-validation) — EXECUTING
+Plan: 2 of 2
+Status: Executing Phase 04
 Last activity: 2026-04-02
 
-Progress: [██████░░░░] 63%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -67,6 +64,7 @@ Progress: [██████░░░░] 63%
 | Phase 03 P02 | 6min | 2 tasks | 9 files |
 | Phase 03 P03 | 4min | 2 tasks | 8 files |
 | Phase 03 P04 | 7min | 3 tasks | 8 files |
+| Phase 04 P01 | 4min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -106,6 +104,9 @@ Recent decisions affecting current work:
 - [Phase 03]: RENAVAM crosswalk uses (UF_UPPER, NAME_UPPER) tuple keys from load_ibge_municipios() per Pitfall 9
 - [Phase 03]: SIOPS tries REST API first then TabNet fallback; empty schema Parquet on failure
 - [Phase 03]: Pipeline STAGES expanded from 6 to 14 wiring all 7 Phase 3 extractors
+- [Phase 04]: General IPCA index for deflation (not health sub-index); health sub-index reserved for sensitivity analysis
+- [Phase 04]: Scaffold-first merge: IBGE ref x years drives row count; all sources left-join onto scaffold
+- [Phase 04]: Monetary columns deflated BEFORE merge (not after) so panel always has constant 2023 BRL
 
 ### Pending Todos
 
@@ -120,8 +121,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T02:23:49.631Z
-Stopped at: Completed 03-04-PLAN.md (RENAVAM + SIOPS + pipeline wiring)
+Last session: 2026-04-02T02:50:58.461Z
+Stopped at: Completed 04-01-PLAN.md (IPCA deflation + panel assembly)
 Last session: 2026-04-02T02:11:59.882Z
 Stopped at: Completed 03-02-PLAN.md
 Last session: 2026-04-02T02:10:44.742Z

@@ -93,7 +93,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — IPCA deflation module + scaffold-first panel assembly with validation gate
+- [x] 04-01-PLAN.md — IPCA deflation module + scaffold-first panel assembly with validation gate
 - [ ] 04-02-PLAN.md — IFGF multiple imputation, CIMI-aligned SQLite v3 builder, missingness documentation
 
 ### Phase 5: Dimension Computation & CUDS

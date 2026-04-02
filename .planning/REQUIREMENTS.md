@@ -34,13 +34,13 @@
 - [x] **DATA-07**: IBGE Census 2022 sanitation extractor — adequate sanitation % and water supply % via Panorama API
 - [x] **DATA-08**: RENAVAM vehicle fleet parser — vehicles per 1,000 inhabitants from dados.transportes.gov.br CSVs (format discovery required)
 - [x] **DATA-09**: SIOPS health expenditure extractor — per-capita municipal health spending from portalfns.saude.gov.br (format discovery required)
-- [ ] **DATA-10**: All monetary variables (SIOPS, GDP) deflated to constant 2023 BRL using IPCA indices
+- [x] **DATA-10**: All monetary variables (SIOPS, GDP) deflated to constant 2023 BRL using IPCA indices
 
 ### Panel Assembly
 
-- [ ] **PANL-01**: Municipality-year merge producing one row per municipality per year (assert 5,570 rows/year after merge)
-- [ ] **PANL-02**: Validation report (validation_report.json) with per-source quality metrics
-- [ ] **PANL-03**: Quarantine directory for flagged rows excluded from panel
+- [x] **PANL-01**: Municipality-year merge producing one row per municipality per year (assert 5,570 rows/year after merge)
+- [x] **PANL-02**: Validation report (validation_report.json) with per-source quality metrics
+- [x] **PANL-03**: Quarantine directory for flagged rows excluded from panel
 - [ ] **PANL-04**: SQLite database with municipal_health table (50,130 rows target), dimension_metadata, municipality_lookup tables
 - [ ] **PANL-05**: IFGF multiple imputation for ~420 MNAR municipalities per year using auxiliary variables (GDP, region, population)
 - [ ] **PANL-06**: Missing data documentation table showing missingness rates per variable per year (RECORD item 12.1)
@@ -144,10 +144,10 @@
 | DATA-07 | Phase 2 | Complete |
 | DATA-08 | Phase 2 | Complete |
 | DATA-09 | Phase 2 | Complete |
-| DATA-10 | Phase 3 | Pending |
-| PANL-01 | Phase 3 | Pending |
-| PANL-02 | Phase 3 | Pending |
-| PANL-03 | Phase 3 | Pending |
+| DATA-10 | Phase 3 | Complete |
+| PANL-01 | Phase 3 | Complete |
+| PANL-02 | Phase 3 | Complete |
+| PANL-03 | Phase 3 | Complete |
 | PANL-04 | Phase 3 | Pending |
 | PANL-05 | Phase 3 | Pending |
 | PANL-06 | Phase 3 | Pending |
