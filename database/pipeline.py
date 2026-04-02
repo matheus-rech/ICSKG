@@ -8,6 +8,13 @@ all data sources required by the ICSKG-BR project:
   2. CNES (Cadastro Nacional de Estabelecimentos de Saúde) – facility registry
   3. ANS (Agência Nacional de Saúde Suplementar) – private-coverage beneficiaries
   4. IFGF (Índice FIRJAN de Gestão Fiscal) – municipal fiscal management scores
+  5. IBGE SIDRA – population estimates and GDP per capita
+  6. IPEA IDHM – Human Development Index by municipality
+  7. IFGF Parquet – FIRJAN IFGF Excel-to-Parquet standardisation
+  8. ANS Quarterly – quarterly average beneficiary counts
+  9. Census 2022 Sanitation – adequate sanitation and water supply %
+ 10. RENAVAM – vehicle fleet per municipality (BEST EFFORT)
+ 11. SIOPS – per-capita health expenditure (BEST EFFORT)
 
 The pipeline can be run for a single year-month or for the full historical
 window (2013–2024).
@@ -25,12 +32,55 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from database.validation import validate_dataframe
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)-8s  %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+
+def load_config(config_path: Path | None = None) -> dict:
+    """Load data path configuration from config.yaml.
+
+    Falls back to data_sources/ defaults if config.yaml is absent,
+    ensuring the project works for any researcher without a NAS mount.
+    """
+    if config_path is None:
+        config_path = Path(__file__).parent.parent / "config.yaml"
+    if not config_path.exists():
+        logger.info("config.yaml not found — using default paths (data_sources/)")
+        return {
+            "data_root": "data_sources",
+            "raw_dir": "raw",
+            "processed_dir": "processed",
+            "quarantine_dir": "quarantine",
+            "db_dir": "database",
+            "output_dir": "analysis/results",
+        }
+    try:
+        import yaml  # noqa: PLC0415
+        with config_path.open() as f:
+            cfg = yaml.safe_load(f)
+        logger.info("Loaded configuration from %s", config_path)
+        return cfg
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not load config.yaml: %s — using defaults", exc)
+        return {
+            "data_root": "data_sources",
+            "raw_dir": "raw",
+            "processed_dir": "processed",
+            "quarantine_dir": "quarantine",
+            "db_dir": "database",
+            "output_dir": "analysis/results",
+        }
+
 
 # ---------------------------------------------------------------------------
 # Stage definitions
@@ -41,6 +91,16 @@ STAGES = [
     "extract_cnes",
     "extract_ans",
     "extract_ifgf",
+    # Phase 3 secondary sources
+    "extract_ibge_population",
+    "extract_ibge_gdp",
+    "extract_idhm",
+    "extract_ifgf_parquet",
+    "extract_ans_quarterly",
+    "extract_census_sanitation",
+    "extract_renavam",
+    "extract_siops",
+    # Merge and load
     "transform_merge",
     "load_database",
 ]
@@ -53,34 +113,172 @@ def _stage_banner(name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Validation helper
+# ---------------------------------------------------------------------------
+
+def _validate_stage_output(
+    path: Path,
+    source_name: str,
+    year: int,
+    quarantine_dir: Path | None = None,
+) -> Path:
+    """Load an extracted file, validate it, and write the clean version back.
+
+    Uses strict=False (quarantine mode) so that invalid rows are quarantined
+    rather than raising an exception.  Returns *path* unchanged (the file is
+    overwritten in-place with the clean DataFrame).
+
+    If the extracted file lacks required columns (cod_ibge, year) the
+    validation will quarantine the entire DataFrame and log a warning.
+    """
+    try:
+        import pandas as pd  # noqa: PLC0415
+    except ImportError:
+        logger.warning("pandas not available -- skipping validation for %s", source_name)
+        return path
+
+    if not path.exists():
+        logger.warning("Validation skipped for %s: file not found at %s", source_name, path)
+        return path
+
+    try:
+        if path.suffix == ".parquet":
+            df = pd.read_parquet(path)
+        elif path.suffix in (".xlsx", ".xls"):
+            df = pd.read_excel(path, dtype={"Cod_IBGE": str})
+        elif path.suffix == ".csv":
+            df = pd.read_csv(path, dtype=str)
+        else:
+            logger.warning("Validation skipped for %s: unsupported format %s", source_name, path.suffix)
+            return path
+
+        # Attempt column renaming so validation can find cod_ibge
+        from database.utils import rename_municipality_column  # noqa: PLC0415
+
+        try:
+            df = rename_municipality_column(df)
+        except ValueError:
+            logger.warning(
+                "Validation [%s]: no municipality code column found -- "
+                "validation will flag schema_conformance",
+                source_name,
+            )
+
+        # Ensure 'year' column exists for validation
+        if "year" not in df.columns:
+            df["year"] = year
+
+        clean_df, report = validate_dataframe(
+            df,
+            source_name=source_name,
+            strict=False,
+            quarantine_dir=quarantine_dir,
+        )
+        logger.info(
+            "Validation [%s]: %d/%d rows valid",
+            source_name,
+            report.n_valid,
+            report.n_rows_input,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Validation failed for %s: %s", source_name, exc)
+
+    return path
+
+
+# ---------------------------------------------------------------------------
 # Extraction stubs
 # (full implementations live in the source-specific scripts under scripts/)
 # ---------------------------------------------------------------------------
 
 def extract_sih(year: int, month: int, raw_dir: Path) -> Path:
-    """Download and parse SIH inpatient records for the given year-month.
+    """Extract SIH inpatient records from FIOCRUZ BigData ETLSIH CSVs.
 
-    Returns the path to the parquet file written to *raw_dir*.
+    Reads CSV files from NAS (or local raw_dir), applies column projection,
+    normalizes municipality codes, and writes per-UF-month Parquet files.
+    Returns the path to the processed SIH directory for the given month.
     """
     _stage_banner("extract_sih")
-    from scripts.sih_batch_v2 import process_month  # noqa: PLC0415
+    from scripts.sih_extract import process_sih_month  # noqa: PLC0415
 
-    output = raw_dir / f"sih_{year}{month:02d}.parquet"
-    logger.info("Extracting SIH %04d-%02d → %s", year, month, output)
-    process_month(year=year, month=month, output_path=output)
-    return output
+    # Resolve output directory from config
+    cfg = load_config()
+    data_root = Path(cfg.get("data_root", "data_sources"))
+    processed_dir = data_root / cfg.get("processed_dir", "processed") / "sih"
+
+    logger.info("Extracting SIH %04d-%02d from %s", year, month, raw_dir)
+    results = process_sih_month(
+        year=year,
+        month=month,
+        raw_dir=raw_dir,
+        output_dir=processed_dir,
+        workers=1,
+        skip_existing=True,
+    )
+
+    ok_count = sum(1 for r in results if r["status"] == "ok")
+    total_rows = sum(r["rows"] for r in results)
+    logger.info(
+        "SIH %04d-%02d: %d/%d UFs processed, %d total rows",
+        year, month, ok_count, len(results), total_rows,
+    )
+    return processed_dir
 
 
 def extract_cnes(year: int, month: int, raw_dir: Path) -> Path:
-    """Download CNES facility snapshot for the given year-month."""
-    _stage_banner("extract_cnes")
-    output = raw_dir / f"cnes_{year}{month:02d}.parquet"
-    logger.info("Extracting CNES %04d-%02d → %s", year, month, output)
-    # Delegated to continue_raw_download which handles both SIH and CNES
-    from scripts.continue_raw_download import download_month  # noqa: PLC0415
+    """Extract CNES facility and professional records.
 
-    download_month(source="CNES", year=year, month=month, output_path=output)
-    return output
+    Reads CNES ST (establishment) files from FIOCRUZ BigData ETLCNES CSVs
+    and writes facilities.parquet.  If CNES PF (professional) files are
+    available, also writes professionals.parquet.
+
+    Returns the processed CNES output directory.
+    """
+    _stage_banner("extract_cnes")
+    from scripts.cnes_extract import (  # noqa: PLC0415
+        extract_cnes_facilities,
+        extract_cnes_professionals,
+    )
+
+    cfg = load_config()
+    data_root = Path(cfg.get("data_root", "data_sources"))
+    processed_dir = data_root / cfg.get("processed_dir", "processed") / "cnes"
+    cnes_raw_dir = raw_dir / "cnes"
+
+    # ST facilities
+    logger.info("Extracting CNES facilities for %04d", year)
+    try:
+        fac_path = extract_cnes_facilities(
+            input_dir=cnes_raw_dir,
+            output_dir=processed_dir,
+            year=year,
+        )
+        logger.info("CNES facilities -> %s", fac_path)
+    except Exception as exc:  # noqa: BLE001
+        logger.error("CNES facility extraction failed: %s", exc)
+
+    # PF professionals (best-effort -- files may not be downloaded yet)
+    pf_dir = raw_dir / "cnes_pf"
+    if pf_dir.exists() and any(pf_dir.iterdir()):
+        logger.info("Extracting CNES professionals for %04d", year)
+        try:
+            prof_path = extract_cnes_professionals(
+                input_dir=pf_dir,
+                output_dir=processed_dir,
+                year=year,
+            )
+            logger.info("CNES professionals -> %s", prof_path)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("CNES professional extraction failed: %s", exc)
+    else:
+        logger.warning(
+            "CNES PF directory not found or empty at %s -- "
+            "professionals.parquet will not be generated. "
+            "Download PF files via: python scripts/cnes_extract.py --download-pf",
+            pf_dir,
+        )
+
+    return processed_dir
 
 
 def extract_ans(data_dir: Path) -> Path:
@@ -104,6 +302,155 @@ def extract_ifgf(data_dir: Path) -> Path:
             "Download from https://www.firjan.com.br/ifgf/ and place it in data_sources/."
         )
     logger.info("IFGF source located at %s", path)
+    return path
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Secondary source extractors
+# ---------------------------------------------------------------------------
+
+def extract_ibge_population(
+    years: list[int],
+    processed_dir: Path,
+) -> Path:
+    """Extract IBGE SIDRA population estimates for the given years.
+
+    Lazy-imports scripts.extract_ibge_sidra.extract_population and writes
+    output to processed_dir / "ibge_sidra" / "population.parquet".
+    """
+    _stage_banner("extract_ibge_population")
+    from scripts.extract_ibge_sidra import extract_population  # noqa: PLC0415
+
+    output_dir = processed_dir / "ibge_sidra"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_population(years=years, output_dir=output_dir)
+    logger.info("IBGE population -> %s", path)
+    return path
+
+
+def extract_ibge_gdp(
+    years: list[int],
+    processed_dir: Path,
+    population_path: Path,
+) -> Path:
+    """Extract IBGE SIDRA GDP per capita for the given years.
+
+    Requires population_path for per-capita computation. Lazy-imports
+    scripts.extract_ibge_sidra.extract_gdp.
+    """
+    _stage_banner("extract_ibge_gdp")
+    from scripts.extract_ibge_sidra import extract_gdp  # noqa: PLC0415
+
+    output_dir = processed_dir / "ibge_sidra"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_gdp(
+        years=years,
+        output_dir=output_dir,
+        population_path=population_path,
+    )
+    logger.info("IBGE GDP -> %s", path)
+    return path
+
+
+def extract_idhm_source(processed_dir: Path) -> Path:
+    """Extract IPEA IDHM (2010 cross-sectional) for all municipalities.
+
+    Lazy-imports scripts.extract_ipea_idhm.extract_idhm.
+    """
+    _stage_banner("extract_idhm")
+    from scripts.extract_ipea_idhm import extract_idhm  # noqa: PLC0415
+
+    output_dir = processed_dir / "ipea_idhm"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_idhm(target_year=2010, output_dir=output_dir)
+    logger.info("IPEA IDHM -> %s", path)
+    return path
+
+
+def extract_ifgf_parquet(data_dir: Path, processed_dir: Path) -> Path:
+    """Extract FIRJAN IFGF from Excel and write standardised Parquet.
+
+    Lazy-imports scripts.extract_ifgf.extract_ifgf. This replaces the
+    old extract_ifgf() which only returned the Excel path. Both coexist.
+    """
+    _stage_banner("extract_ifgf_parquet")
+    from scripts.extract_ifgf import extract_ifgf as _extract_ifgf  # noqa: PLC0415
+
+    output_dir = processed_dir / "ifgf"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = _extract_ifgf(data_dir=data_dir, output_dir=output_dir)
+    logger.info("IFGF Parquet -> %s", path)
+    return path
+
+
+def extract_ans_quarterly_source(
+    years: list[int],
+    data_dir: Path,
+    processed_dir: Path,
+) -> Path:
+    """Extract ANS quarterly average beneficiary counts.
+
+    Lazy-imports scripts.extract_ans_quarterly.extract_ans_quarterly.
+    """
+    _stage_banner("extract_ans_quarterly")
+    from scripts.extract_ans_quarterly import extract_ans_quarterly  # noqa: PLC0415
+
+    raw_dir = data_dir / "raw" / "ANS"
+    output_dir = processed_dir / "ans"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_ans_quarterly(
+        years=years,
+        raw_dir=raw_dir,
+        output_dir=output_dir,
+    )
+    logger.info("ANS quarterly -> %s", path)
+    return path
+
+
+def extract_census_sanitation_source(processed_dir: Path) -> Path:
+    """Extract IBGE Census 2022 sanitation and water supply indicators.
+
+    Lazy-imports scripts.extract_census_sanitation.extract_sanitation.
+    """
+    _stage_banner("extract_census_sanitation")
+    from scripts.extract_census_sanitation import extract_sanitation  # noqa: PLC0415
+
+    output_dir = processed_dir / "census_sanitation"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_sanitation(output_dir=output_dir)
+    logger.info("Census sanitation -> %s", path)
+    return path
+
+
+def extract_renavam_source(years: list[int], processed_dir: Path) -> Path:
+    """Extract RENAVAM vehicle fleet data (BEST EFFORT).
+
+    Lazy-imports scripts.extract_renavam.extract_renavam. Failure does
+    not block the pipeline -- logs gap and writes empty schema Parquet.
+    """
+    _stage_banner("extract_renavam")
+    from scripts.extract_renavam import extract_renavam  # noqa: PLC0415
+
+    output_dir = processed_dir / "renavam"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_renavam(years=years, output_dir=output_dir)
+    logger.info("RENAVAM -> %s", path)
+    return path
+
+
+def extract_siops_source(years: list[int], processed_dir: Path) -> Path:
+    """Extract SIOPS per-capita health expenditure (BEST EFFORT).
+
+    Lazy-imports scripts.extract_siops.extract_siops. Failure does not
+    block the pipeline -- logs gap and writes empty schema Parquet.
+    """
+    _stage_banner("extract_siops")
+    from scripts.extract_siops import extract_siops  # noqa: PLC0415
+
+    output_dir = processed_dir / "siops"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = extract_siops(years=years, output_dir=output_dir)
+    logger.info("SIOPS -> %s", path)
     return path
 
 
@@ -157,14 +504,22 @@ def transform_merge(
         pd.DataFrame().to_parquet(output)
         return output
 
-    # Simple outer join on municipality code (cod_ibge / Cod_IBGE)
+    # Normalise municipality codes using shared utilities
+    from database.utils import rename_municipality_column, normalize_cod_ibge  # noqa: PLC0415
+
+    # Outer join on canonical municipality code (cod_ibge)
     merged = None
     for label, df in frames.items():
-        # Normalise municipality column name
-        for col in ("Cod_IBGE", "CD_MUNICIPIO", "cod_ibge"):
-            if col in df.columns:
-                df = df.rename(columns={col: "cod_ibge"})
-                break
+        # Rename source-specific column to canonical 'cod_ibge'
+        try:
+            df = rename_municipality_column(df)
+        except ValueError:
+            logger.warning(
+                "Source %s has no municipality code column – skipping.", label
+            )
+            continue
+        # Canonicalize to 7-digit zero-padded string
+        df["cod_ibge"] = normalize_cod_ibge(df["cod_ibge"])
         df = df.add_prefix(f"{label}_").rename(columns={f"{label}_cod_ibge": "cod_ibge"})
         merged = df if merged is None else merged.merge(df, on="cod_ibge", how="outer")
 
@@ -206,6 +561,7 @@ def run_pipeline(
     data_dir: Path = Path("data_sources"),
     raw_dir: Path = Path("data_sources/raw"),
     processed_dir: Path = Path("data_sources/processed"),
+    quarantine_dir: Path = Path("data_sources/quarantine"),
     db_dir: Path = Path("database"),
     stages: list = None,
 ) -> None:
@@ -216,36 +572,112 @@ def run_pipeline(
     raw_dir.mkdir(parents=True, exist_ok=True)
     processed_dir.mkdir(parents=True, exist_ok=True)
 
+    # Default year range for annual extractors
+    years = list(range(2015, 2024))
+
     results: dict[str, Path | None] = {
         "sih": None,
         "cnes": None,
         "ans": None,
         "ifgf": None,
+        "ibge_population": None,
+        "ibge_gdp": None,
+        "idhm": None,
+        "ifgf_parquet": None,
+        "ans_quarterly": None,
+        "census_sanitation": None,
+        "renavam": None,
+        "siops": None,
     }
 
     if "extract_sih" in stages:
         try:
             results["sih"] = extract_sih(year, month, raw_dir)
+            if results["sih"]:
+                _validate_stage_output(results["sih"], "sih", year, quarantine_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("extract_sih failed: %s", exc)
 
     if "extract_cnes" in stages:
         try:
             results["cnes"] = extract_cnes(year, month, raw_dir)
+            if results["cnes"]:
+                _validate_stage_output(results["cnes"], "cnes", year, quarantine_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("extract_cnes failed: %s", exc)
 
     if "extract_ans" in stages:
         try:
             results["ans"] = extract_ans(data_dir)
+            if results["ans"]:
+                _validate_stage_output(results["ans"], "ans", year, quarantine_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("extract_ans failed: %s", exc)
 
     if "extract_ifgf" in stages:
         try:
             results["ifgf"] = extract_ifgf(data_dir)
+            if results["ifgf"]:
+                _validate_stage_output(results["ifgf"], "ifgf", year, quarantine_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("extract_ifgf failed: %s", exc)
+
+    # --- Phase 3 secondary source stages ---
+
+    if "extract_ibge_population" in stages:
+        try:
+            results["ibge_population"] = extract_ibge_population(years, processed_dir)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_ibge_population failed: %s", exc)
+
+    if "extract_ibge_gdp" in stages:
+        try:
+            pop_path = results.get("ibge_population")
+            if pop_path is None:
+                pop_path = processed_dir / "ibge_sidra" / "population.parquet"
+            results["ibge_gdp"] = extract_ibge_gdp(years, processed_dir, pop_path)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_ibge_gdp failed: %s", exc)
+
+    if "extract_idhm" in stages:
+        try:
+            results["idhm"] = extract_idhm_source(processed_dir)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_idhm failed: %s", exc)
+
+    if "extract_ifgf_parquet" in stages:
+        try:
+            results["ifgf_parquet"] = extract_ifgf_parquet(data_dir, processed_dir)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_ifgf_parquet failed: %s", exc)
+
+    if "extract_ans_quarterly" in stages:
+        try:
+            results["ans_quarterly"] = extract_ans_quarterly_source(
+                years, data_dir, processed_dir,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_ans_quarterly failed: %s", exc)
+
+    if "extract_census_sanitation" in stages:
+        try:
+            results["census_sanitation"] = extract_census_sanitation_source(
+                processed_dir,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_census_sanitation failed: %s", exc)
+
+    if "extract_renavam" in stages:
+        try:
+            results["renavam"] = extract_renavam_source(years, processed_dir)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_renavam failed: %s", exc)
+
+    if "extract_siops" in stages:
+        try:
+            results["siops"] = extract_siops_source(years, processed_dir)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("extract_siops failed: %s", exc)
 
     if "transform_merge" in stages:
         try:
@@ -300,8 +732,8 @@ def main(argv=None):
     group.add_argument("--start", metavar="YYYY-MM", help="Start of date range")
 
     parser.add_argument("--end", metavar="YYYY-MM", help="End of date range (required with --start)")
-    parser.add_argument("--data-dir", default="data_sources", help="Root data directory")
-    parser.add_argument("--db-dir", default="database", help="Database output directory")
+    parser.add_argument("--data-dir", default=None, help="Root data directory (overrides config.yaml)")
+    parser.add_argument("--db-dir", default=None, help="Database output directory (overrides config.yaml)")
     parser.add_argument(
         "--stages",
         nargs="+",
@@ -311,8 +743,20 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    data_dir = Path(args.data_dir)
-    db_dir = Path(args.db_dir)
+    # Load configuration from config.yaml (falls back to defaults)
+    cfg = load_config()
+    data_root = Path(cfg.get("data_root", "data_sources"))
+
+    # CLI arguments override config.yaml values
+    data_dir = Path(args.data_dir) if args.data_dir else data_root
+    raw_dir = data_dir / cfg.get("raw_dir", "raw")
+    processed_dir = data_dir / cfg.get("processed_dir", "processed")
+    quarantine_dir = data_dir / cfg.get("quarantine_dir", "quarantine")
+    db_dir = Path(args.db_dir) if args.db_dir else Path(cfg.get("db_dir", "database"))
+
+    logger.info("Data root: %s", data_dir)
+    logger.info("Raw: %s | Processed: %s | Quarantine: %s | DB: %s",
+                raw_dir, processed_dir, quarantine_dir, db_dir)
 
     if args.year_month:
         y, m = map(int, args.year_month.split("-"))
@@ -329,6 +773,9 @@ def main(argv=None):
             year=year,
             month=month,
             data_dir=data_dir,
+            raw_dir=raw_dir,
+            processed_dir=processed_dir,
+            quarantine_dir=quarantine_dir,
             db_dir=db_dir,
             stages=args.stages,
         )
