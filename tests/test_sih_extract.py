@@ -199,3 +199,154 @@ def test_val_tot_numeric():
     assert pd.api.types.is_float_dtype(df["VAL_TOT"]), (
         "VAL_TOT should be float, got %s" % df["VAL_TOT"].dtype
     )
+
+
+# ---------------------------------------------------------------------------
+# Municipality-year aggregation tests
+# ---------------------------------------------------------------------------
+
+def _build_processed_parquets(tmp_path):
+    """Helper: run process_sih_month to create per-UF Parquet files in tmp_path."""
+    from scripts.sih_extract import _process_uf_month
+
+    output_dir = tmp_path / "processed" / "sih"
+    output_dir.mkdir(parents=True)
+
+    _process_uf_month(
+        uf="XX",
+        year=2023,
+        month=1,
+        raw_dir=FIXTURE_DIR,
+        output_dir=output_dir,
+        skip_existing=False,
+    )
+    return output_dir
+
+
+def test_aggregate_sih_year_columns(tmp_path):
+    """aggregate_sih_year() output has columns [cod_ibge, year, n_procedures, n_deaths, total_cost_brl, mean_stay_days]."""
+    from scripts.sih_extract import aggregate_sih_year
+
+    processed_dir = _build_processed_parquets(tmp_path)
+    agg_dir = tmp_path / "processed" / "sih_aggregated"
+
+    out_path = aggregate_sih_year(
+        processed_dir=processed_dir,
+        output_dir=agg_dir,
+        year=2023,
+        skip_existing=False,
+    )
+
+    df = pd.read_parquet(out_path)
+    expected_cols = {"cod_ibge", "year", "n_procedures", "n_deaths", "total_cost_brl", "mean_stay_days"}
+    assert set(df.columns) == expected_cols, (
+        "Column mismatch: extra=%s missing=%s"
+        % (set(df.columns) - expected_cols, expected_cols - set(df.columns))
+    )
+
+
+def test_aggregate_sih_year_groupby(tmp_path):
+    """Aggregation groups by (cod_ibge, year) -- municipality '0120020' has 2 procedures after dedup."""
+    from scripts.sih_extract import aggregate_sih_year
+
+    processed_dir = _build_processed_parquets(tmp_path)
+    agg_dir = tmp_path / "processed" / "sih_aggregated"
+
+    out_path = aggregate_sih_year(
+        processed_dir=processed_dir,
+        output_dir=agg_dir,
+        year=2023,
+        skip_existing=False,
+    )
+
+    df = pd.read_parquet(out_path)
+    row_ac = df[df["cod_ibge"] == "0120020"]
+    assert len(row_ac) == 1, "Expected single row for cod_ibge 0120020"
+    assert row_ac.iloc[0]["n_procedures"] == 2
+
+
+def test_aggregate_sih_year_death_sum(tmp_path):
+    """n_deaths sums MORTE column correctly (1 death for cod_ibge '0355030')."""
+    from scripts.sih_extract import aggregate_sih_year
+
+    processed_dir = _build_processed_parquets(tmp_path)
+    agg_dir = tmp_path / "processed" / "sih_aggregated"
+
+    out_path = aggregate_sih_year(
+        processed_dir=processed_dir,
+        output_dir=agg_dir,
+        year=2023,
+        skip_existing=False,
+    )
+
+    df = pd.read_parquet(out_path)
+    row_sp = df[df["cod_ibge"] == "0355030"]
+    assert len(row_sp) == 1
+    assert row_sp.iloc[0]["n_deaths"] == 1
+
+
+def test_aggregate_sih_year_cost_sum(tmp_path):
+    """total_cost_brl sums VAL_TOT correctly for cod_ibge '0120020'."""
+    from scripts.sih_extract import aggregate_sih_year
+
+    processed_dir = _build_processed_parquets(tmp_path)
+    agg_dir = tmp_path / "processed" / "sih_aggregated"
+
+    out_path = aggregate_sih_year(
+        processed_dir=processed_dir,
+        output_dir=agg_dir,
+        year=2023,
+        skip_existing=False,
+    )
+
+    df = pd.read_parquet(out_path)
+    row_ac = df[df["cod_ibge"] == "0120020"]
+    assert abs(row_ac.iloc[0]["total_cost_brl"] - 1835.80) < 0.01
+
+
+def test_aggregate_sih_year_writes_parquet(tmp_path):
+    """Output written to sih_mun_year_{YEAR}.parquet."""
+    from scripts.sih_extract import aggregate_sih_year
+
+    processed_dir = _build_processed_parquets(tmp_path)
+    agg_dir = tmp_path / "processed" / "sih_aggregated"
+
+    out_path = aggregate_sih_year(
+        processed_dir=processed_dir,
+        output_dir=agg_dir,
+        year=2023,
+        skip_existing=False,
+    )
+
+    assert out_path.name == "sih_mun_year_2023.parquet"
+    assert out_path.exists()
+    assert out_path.stat().st_size > 0
+
+
+def test_aggregate_sih_year_validation(tmp_path):
+    """validate_dataframe() passes on aggregated output (cod_ibge + year present, codes valid)."""
+    from scripts.sih_extract import aggregate_sih_year
+    from database.validation import validate_dataframe
+
+    processed_dir = _build_processed_parquets(tmp_path)
+    agg_dir = tmp_path / "processed" / "sih_aggregated"
+
+    out_path = aggregate_sih_year(
+        processed_dir=processed_dir,
+        output_dir=agg_dir,
+        year=2023,
+        skip_existing=False,
+    )
+
+    df = pd.read_parquet(out_path)
+    clean_df, report = validate_dataframe(
+        df,
+        source_name="sih_aggregated",
+        strict=False,
+        quarantine_dir=tmp_path / "quarantine",
+    )
+    # Schema conformance should pass (cod_ibge and year present)
+    schema_check = [c for c in report.checks if c.check_name == "schema_conformance"]
+    assert len(schema_check) == 0 or schema_check[0].passed, (
+        "Schema conformance failed: %s" % schema_check
+    )

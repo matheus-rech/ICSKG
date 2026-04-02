@@ -175,17 +175,37 @@ def _validate_stage_output(
 # ---------------------------------------------------------------------------
 
 def extract_sih(year: int, month: int, raw_dir: Path) -> Path:
-    """Download and parse SIH inpatient records for the given year-month.
+    """Extract SIH inpatient records from FIOCRUZ BigData ETLSIH CSVs.
 
-    Returns the path to the parquet file written to *raw_dir*.
+    Reads CSV files from NAS (or local raw_dir), applies column projection,
+    normalizes municipality codes, and writes per-UF-month Parquet files.
+    Returns the path to the processed SIH directory for the given month.
     """
     _stage_banner("extract_sih")
-    from scripts.sih_batch_v2 import process_month  # noqa: PLC0415
+    from scripts.sih_extract import process_sih_month  # noqa: PLC0415
 
-    output = raw_dir / f"sih_{year}{month:02d}.parquet"
-    logger.info("Extracting SIH %04d-%02d → %s", year, month, output)
-    process_month(year=year, month=month, output_path=output)
-    return output
+    # Resolve output directory from config
+    cfg = load_config()
+    data_root = Path(cfg.get("data_root", "data_sources"))
+    processed_dir = data_root / cfg.get("processed_dir", "processed") / "sih"
+
+    logger.info("Extracting SIH %04d-%02d from %s", year, month, raw_dir)
+    results = process_sih_month(
+        year=year,
+        month=month,
+        raw_dir=raw_dir,
+        output_dir=processed_dir,
+        workers=1,
+        skip_existing=True,
+    )
+
+    ok_count = sum(1 for r in results if r["status"] == "ok")
+    total_rows = sum(r["rows"] for r in results)
+    logger.info(
+        "SIH %04d-%02d: %d/%d UFs processed, %d total rows",
+        year, month, ok_count, len(results), total_rows,
+    )
+    return processed_dir
 
 
 def extract_cnes(year: int, month: int, raw_dir: Path) -> Path:
