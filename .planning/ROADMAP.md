@@ -56,7 +56,7 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — SIH CSV-to-Parquet extraction with DuckDB column projection, test fixtures, municipality code normalization
+- [x] 02-01-PLAN.md — SIH CSV-to-Parquet extraction with DuckDB column projection, test fixtures, municipality code normalization
 - [ ] 02-02-PLAN.md — SIH municipality-year aggregation and pipeline.py extract_sih() rewiring
 - [ ] 02-03-PLAN.md — CNES ST facility extraction from ETLCNES.zip, bellwether filter, CBO code constants
 - [ ] 02-04-PLAN.md — CNES PF professional download via PySUS, SAO filtering, pipeline.py extract_cnes() rewiring
@@ -165,7 +165,7 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | - |
-| 2. SIH & CNES Extraction | 0/4 | Not started | - |
+| 2. SIH & CNES Extraction | 1/4 | In Progress|  |
 | 3. Secondary Source Extraction | 0/TBD | Not started | - |
 | 4. Panel Assembly & Validation | 0/TBD | Not started | - |
 | 5. Dimension Computation & CUDS | 0/TBD | Not started | - |

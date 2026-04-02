@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-04-PLAN.md (validation gate)
-last_updated: "2026-04-01T23:57:33.300Z"
+stopped_at: Completed 02-01-PLAN.md (SIH extraction)
+last_updated: "2026-04-02T01:13:29.134Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 10
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 8
+  completed_plans: 5
   percent: 25
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-01)
 
 **Core value:** Reproducible, publicly-sourced database proving whether municipal urban development predicts surgical system performance — first subnational cross-reference of urban development composite indices with surgical indicators.
-**Current focus:** Phase 1 — Foundation
+**Current focus:** Phase 2 — SIH & CNES Extraction
 
 ## Current Position
 
 Phase: 2 of 10 (sih & cnes extraction)
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-04-01
+Plan: 1 of 4 complete
+Status: Executing
+Last activity: 2026-04-02
 
-Progress: [███░░░░░░░] 25%
+Progress: [██████░░░░] 63%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 01 P02 | 2min | 2 tasks | 4 files |
 | Phase 01 P03 | 2min | 1 tasks | 3 files |
 | Phase 01 P04 | 2min | 1 tasks | 2 files |
+| Phase 02 P01 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,8 @@ Recent decisions affecting current work:
 - [Phase 01]: IBGE authoritative count is 5,571 municipalities (not 5,570) -- tests use dynamic count from reference CSV
 - [Phase 01]: Used datetime.now(timezone.utc) instead of deprecated datetime.utcnow() for Python 3.12 compatibility in validation gate
 - [Phase 01]: Lazy import of load_ibge_municipios inside validate_dataframe() to avoid circular dependency at module level
+- [Phase 02]: DuckDB read_csv_auto() for SIH column projection (27/235 cols)
+- [Phase 02]: MUNIC_MOV renamed to cod_ibge (treatment municipality); MUNIC_RES to cod_ibge_res
 
 ### Pending Todos
 
@@ -91,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T23:40:57.238Z
-Stopped at: Completed 01-04-PLAN.md (validation gate)
+Last session: 2026-04-02T01:13:29.130Z
+Stopped at: Completed 02-01-PLAN.md (SIH extraction)
 Resume file: None

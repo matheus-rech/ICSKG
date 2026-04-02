@@ -16,7 +16,7 @@
 
 ### Data Acquisition
 
-- [ ] **DATA-01**: SIH processor — read raw SIH data from NAS (already downloaded, all 12 months × 9 years × 27 states), convert DBC→Parquet, aggregate to municipality-year level
+- [x] **DATA-01**: SIH processor — read raw SIH data from NAS (already downloaded, all 12 months × 9 years × 27 states), convert DBC→Parquet, aggregate to municipality-year level
 - [ ] **DATA-02**: CNES extractor — professional records (PF group) with CBO-based filtering for surgeons, anesthesiologists, obstetricians; facility records for bellwether hospital identification
 - [ ] **DATA-03**: IBGE SIDRA extractor — population estimates (table 6579) and GDP per capita (table 5938) for all municipalities via API
 - [ ] **DATA-04**: IPEA IDHM extractor — composite + education/longevity/income sub-indices via OData API; handle census-only availability (2010, 2022)
@@ -117,7 +117,7 @@
 | FOUN-04 | Phase 1 | Complete |
 | FOUN-05 | Phase 1 | Complete |
 | FOUN-06 | Phase 1 | Complete |
-| DATA-01 | Phase 2 | Pending |
+| DATA-01 | Phase 2 | Complete |
 | DATA-02 | Phase 2 | Pending |
 | DATA-03 | Phase 2 | Pending |
 | DATA-04 | Phase 2 | Pending |
