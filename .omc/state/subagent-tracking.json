@@ -150,10 +150,17 @@
       "status": "completed",
       "completed_at": "2026-04-02T01:07:31.399Z",
       "duration_ms": 598216
+    },
+    {
+      "agent_id": "a73ded3c02855ce23",
+      "agent_type": "gsd-planner",
+      "started_at": "2026-04-02T05:23:44.766Z",
+      "parent_mode": "none",
+      "status": "running"
     }
   ],
-  "total_spawned": 17,
+  "total_spawned": 18,
   "total_completed": 16,
   "total_failed": 0,
-  "last_updated": "2026-04-02T01:07:31.501Z"
+  "last_updated": "2026-04-02T05:23:44.867Z"
 }

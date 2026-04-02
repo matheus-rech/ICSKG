@@ -110,26 +110,32 @@
     },
     {
       "path": ".planning/REQUIREMENTS.md",
-      "accessCount": 16,
-      "lastAccessed": 1775091458047,
+      "accessCount": 17,
+      "lastAccessed": 1775107445825,
       "type": "file"
     },
     {
       "path": ".planning/PROJECT.md",
-      "accessCount": 15,
-      "lastAccessed": 1775091459370,
+      "accessCount": 16,
+      "lastAccessed": 1775107429350,
       "type": "file"
     },
     {
       "path": ".planning/ROADMAP.md",
-      "accessCount": 14,
-      "lastAccessed": 1775092017666,
+      "accessCount": 15,
+      "lastAccessed": 1775107429156,
       "type": "file"
     },
     {
       "path": "extract_lcogs1.py",
       "accessCount": 10,
       "lastAccessed": 1775082984005,
+      "type": "file"
+    },
+    {
+      "path": ".planning/STATE.md",
+      "accessCount": 10,
+      "lastAccessed": 1775107445528,
       "type": "file"
     },
     {
@@ -145,12 +151,6 @@
       "type": "file"
     },
     {
-      "path": ".planning/STATE.md",
-      "accessCount": 9,
-      "lastAccessed": 1775091457268,
-      "type": "file"
-    },
-    {
       "path": "analysis/icskg_analysis_pipeline.py",
       "accessCount": 8,
       "lastAccessed": 1775079282582,
@@ -160,6 +160,12 @@
       "path": "database/utils.py",
       "accessCount": 8,
       "lastAccessed": 1775091466815,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 8,
+      "lastAccessed": 1775107430521,
       "type": "file"
     },
     {
@@ -178,12 +184,6 @@
       "path": ".planning/codebase/STRUCTURE.md",
       "accessCount": 7,
       "lastAccessed": 1775083161414,
-      "type": "file"
-    },
-    {
-      "path": "CLAUDE.md",
-      "accessCount": 7,
-      "lastAccessed": 1775091460072,
       "type": "file"
     },
     {

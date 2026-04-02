@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-02T01:07:31.399Z",
+  "updatedAt": "2026-04-02T05:23:44.766Z",
   "missions": [
     {
       "id": "session:7ccab934-fce8-4ffa-84b7-bad1ab7f09a4:none",
@@ -189,14 +189,14 @@
       "name": "none",
       "objective": "Session mission",
       "createdAt": "2026-04-01T23:42:36.418Z",
-      "updatedAt": "2026-04-02T01:07:31.399Z",
-      "status": "done",
-      "workerCount": 5,
+      "updatedAt": "2026-04-02T05:23:44.766Z",
+      "status": "running",
+      "workerCount": 6,
       "taskCounts": {
-        "total": 5,
+        "total": 6,
         "pending": 0,
         "blocked": 0,
-        "inProgress": 0,
+        "inProgress": 1,
         "completed": 5,
         "failed": 0
       },
@@ -250,25 +250,19 @@
           "latestUpdate": "completed",
           "completedSummary": null,
           "updatedAt": "2026-04-02T01:07:31.399Z"
+        },
+        {
+          "name": "gsd-planner:a73ded3",
+          "role": "gsd-planner",
+          "ownership": "a73ded3c02855ce23",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-04-02T05:23:44.766Z"
         }
       ],
       "timeline": [
-        {
-          "id": "session-start:a9a40947cbcde8045:2026-04-02T00:47:10.552Z",
-          "at": "2026-04-02T00:47:10.552Z",
-          "kind": "update",
-          "agent": "gsd-phase-researcher:a9a4094",
-          "detail": "started gsd-phase-researcher:a9a4094",
-          "sourceKey": "session-start:a9a40947cbcde8045"
-        },
-        {
-          "id": "session-stop:a9a40947cbcde8045:2026-04-02T00:57:09.707Z",
-          "at": "2026-04-02T00:57:09.707Z",
-          "kind": "completion",
-          "agent": "gsd-phase-researcher:a9a4094",
-          "detail": "completed",
-          "sourceKey": "session-stop:a9a40947cbcde8045"
-        },
         {
           "id": "session-start:ac51dafbb14c6de89:2026-04-02T00:57:33.183Z",
           "at": "2026-04-02T00:57:33.183Z",
@@ -284,6 +278,14 @@
           "agent": "gsd-planner:ac51daf",
           "detail": "completed",
           "sourceKey": "session-stop:ac51dafbb14c6de89"
+        },
+        {
+          "id": "session-start:a73ded3c02855ce23:2026-04-02T05:23:44.766Z",
+          "at": "2026-04-02T05:23:44.766Z",
+          "kind": "update",
+          "agent": "gsd-planner:a73ded3",
+          "detail": "started gsd-planner:a73ded3",
+          "sourceKey": "session-start:a73ded3c02855ce23"
         }
       ]
     }
