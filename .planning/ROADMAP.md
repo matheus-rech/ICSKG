@@ -76,9 +76,6 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md — IBGE SIDRA population estimates + GDP extraction with per-capita computation
 - [x] 03-02-PLAN.md — IPEA IDHM cross-sectional extraction + FIRJAN IFGF Excel parser
-- [x] 03-01-PLAN.md — IBGE SIDRA population estimates + GDP extraction with per-capita computation
-- [x] 03-02-PLAN.md — IPEA IDHM cross-sectional extraction + FIRJAN IFGF Excel parser
-- [x] 03-03-PLAN.md — ANS quarterly average beneficiaries + Census 2022 sanitation extraction
 - [x] 03-03-PLAN.md — ANS quarterly average beneficiaries + Census 2022 sanitation extraction
 - [x] 03-04-PLAN.md — RENAVAM + SIOPS best-effort extraction + pipeline.py wiring for all secondary sources
 
@@ -93,7 +90,11 @@ Plans:
   4. SQLite `municipal_health` table contains exactly 50,130 rows and the schema matches the documented DDL
   5. IFGF missing values for ~420 MNAR municipalities per year are filled via multiple imputation (auxiliary variables: GDP, region, population), and the imputation method is logged in `PANL-05-imputation.log`
   6. `PANL-06-missingness.csv` documents missingness rate per variable per year, satisfying RECORD item 12.1
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — IPCA deflation module + scaffold-first panel assembly with validation gate
+- [ ] 04-02-PLAN.md — IFGF multiple imputation, CIMI-aligned SQLite v3 builder, missingness documentation
 
 ### Phase 5: Dimension Computation & CUDS
 **Goal**: Every municipality-year row in SQLite carries a valid score for all 8 active CIMI dimensions and a CUDS composite that reflects the geometric mean of within-year normalized scores
@@ -175,8 +176,8 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | - |
 | 2. SIH & CNES Extraction | 4/4 | Complete |  |
-| 3. Secondary Source Extraction | 2/4 | In progress | - |
-| 4. Panel Assembly & Validation | 0/TBD | Not started | - |
+| 3. Secondary Source Extraction | 4/4 | Complete | - |
+| 4. Panel Assembly & Validation | 0/2 | Not started | - |
 | 5. Dimension Computation & CUDS | 0/TBD | Not started | - |
 | 6. LCoGS Indicators | 0/TBD | Not started | - |
 | 7. Statistical Analysis | 0/TBD | Not started | - |
