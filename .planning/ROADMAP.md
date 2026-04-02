@@ -123,7 +123,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 06-01-PLAN.md — All 6 LCoGS indicator computations (haversine distance, SAO density, surgical volume, POMR, financial risk, catastrophic expenditure) + SQLite persistence
+- [x] 06-01-PLAN.md — All 6 LCoGS indicator computations (haversine distance, SAO density, surgical volume, POMR, financial risk, catastrophic expenditure) + SQLite persistence
 
 ### Phase 7: Statistical Analysis
 **Goal**: Primary hypothesis tests are complete — two-way fixed-effects panel regressions of CUDS on each LCoGS outcome, with cluster-robust standard errors, Hausman test, and sensitivity analyses, all reproducible

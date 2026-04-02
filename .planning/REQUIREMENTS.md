@@ -54,12 +54,12 @@
 
 ### LCoGS Indicators
 
-- [ ] **LCOG-01**: LCoGS-1 — Access to bellwether procedures (haversine distance to nearest bellwether hospital from 765+ geocoded facilities)
-- [ ] **LCOG-02**: LCoGS-2 — SAO workforce density per 100,000 population (surgeons + anesthesiologists + obstetricians, deduplicated by CNS)
-- [ ] **LCOG-03**: LCoGS-3 — Surgical volume per 100,000 population (SUS-funded procedures from SIH)
-- [ ] **LCOG-04**: LCoGS-4 — Perioperative mortality rate from SIH (in-hospital deaths within 30 days of surgical admission)
-- [ ] **LCOG-05**: LCoGS-5 — Financial risk protection (ecological proxy: average SIH procedure cost / GDP per capita)
-- [ ] **LCOG-06**: LCoGS-6 — Catastrophic expenditure (ecological proxy: procedures exceeding cost threshold relative to GDP per capita)
+- [x] **LCOG-01**: LCoGS-1 — Access to bellwether procedures (haversine distance to nearest bellwether hospital from 765+ geocoded facilities)
+- [x] **LCOG-02**: LCoGS-2 — SAO workforce density per 100,000 population (surgeons + anesthesiologists + obstetricians, deduplicated by CNS)
+- [x] **LCOG-03**: LCoGS-3 — Surgical volume per 100,000 population (SUS-funded procedures from SIH)
+- [x] **LCOG-04**: LCoGS-4 — Perioperative mortality rate from SIH (in-hospital deaths within 30 days of surgical admission)
+- [x] **LCOG-05**: LCoGS-5 — Financial risk protection (ecological proxy: average SIH procedure cost / GDP per capita)
+- [x] **LCOG-06**: LCoGS-6 — Catastrophic expenditure (ecological proxy: procedures exceeding cost threshold relative to GDP per capita)
 
 ### Statistical Analysis
 
@@ -155,12 +155,12 @@
 | DIMS-02 | Phase 4 | Complete |
 | DIMS-03 | Phase 4 | Complete |
 | DIMS-04 | Phase 4 | Complete |
-| LCOG-01 | Phase 5 | Pending |
-| LCOG-02 | Phase 5 | Pending |
-| LCOG-03 | Phase 5 | Pending |
-| LCOG-04 | Phase 5 | Pending |
-| LCOG-05 | Phase 5 | Pending |
-| LCOG-06 | Phase 5 | Pending |
+| LCOG-01 | Phase 5 | Complete |
+| LCOG-02 | Phase 5 | Complete |
+| LCOG-03 | Phase 5 | Complete |
+| LCOG-04 | Phase 5 | Complete |
+| LCOG-05 | Phase 5 | Complete |
+| LCOG-06 | Phase 5 | Complete |
 | STAT-01 | Phase 6 | Pending |
 | STAT-02 | Phase 6 | Pending |
 | STAT-03 | Phase 6 | Pending |

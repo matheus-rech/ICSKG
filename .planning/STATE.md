@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 05-01-PLAN.md (dimension computation + CUDS)
-last_updated: "2026-04-02T03:42:09.223Z"
+stopped_at: Completed 06-01-PLAN.md (LCoGS indicators)
+last_updated: "2026-04-02T04:00:31.397Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 10
-  completed_phases: 5
-  total_plans: 15
-  completed_plans: 15
+  completed_phases: 6
+  total_plans: 16
+  completed_plans: 16
   percent: 93
 ---
 
@@ -67,6 +67,7 @@ Progress: [█████████░] 93%
 | Phase 04 P01 | 4min | 1 tasks | 4 files |
 | Phase 04 P02 | 6min | 2 tasks | 4 files |
 | Phase 05 P01 | 4min | 2 tasks | 3 files |
+| Phase 06 P01 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -114,6 +115,9 @@ Recent decisions affecting current work:
 - [Phase 04]: D8 International Projection excluded from 8-dimension CIMI metadata; D3/D5 flagged cross-sectional
 - [Phase 05]: D4 inverted AFTER min-max normalization (1 - normalized) so higher SUS dependence = lower score
 - [Phase 05]: CUDS uses geometric mean with epsilon=0.01 floor preventing zero collapse; missing dims excluded per-municipality
+- [Phase 06]: CATASTROPHIC_THRESHOLD = 0.10 (10% GDP/cap) for LCoGS-6 ecological proxy
+- [Phase 06]: Municipality centroids via geobr (IBGE 2022 shapefiles) with module-level cache for LCoGS-1 haversine distances
+- [Phase 06]: LCoGS-4 POMR suppressed to NaN for <10 surgical events; LCoGS-5/6 ecological-proxy caveats in lcogs_metadata
 
 ### Pending Todos
 
@@ -128,8 +132,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T03:38:51.471Z
-Stopped at: Completed 05-01-PLAN.md (dimension computation + CUDS)
+Last session: 2026-04-02T04:00:31.395Z
+Stopped at: Completed 06-01-PLAN.md (LCoGS indicators)
 Last session: 2026-04-02T02:11:59.882Z
 Stopped at: Completed 03-02-PLAN.md
 Last session: 2026-04-02T02:10:44.742Z
