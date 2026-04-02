@@ -4,17 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: verifying
 stopped_at: Completed 09.1-01-PLAN.md (EconML causal inference + PCA composite)
-last_updated: "2026-04-02T05:10:09.197Z"
+last_updated: "2026-04-02T05:22:33.049Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 11
   completed_phases: 10
-  total_plans: 20
-stopped_at: Completed 09.1-02-PLAN.md (age-standardization, health regions, USD conversion)
-last_updated: "2026-04-02T05:11:24.714Z"
-  completed_phases: 9
-  total_plans: 21
-  completed_plans: 20
+  total_plans: 22
+  completed_plans: 22
   percent: 93
 ---
 
@@ -138,7 +134,9 @@ Recent decisions affecting current work:
 
 - [Phase 09]: geobr pinned >=0.2 (not >=1.0) -- latest available is 0.2.2
 - [Phase 09]: Queen contiguity weights for Moran's I spatial autocorrelation (standard for areal data)
+
 <<<<<<< HEAD
+
 - [Phase 09.1]: LassoCV for DML nuisance models; CausalForestDML 500 trees for CATE
 - [Phase 09.1]: scipy>=1.13 added as missing dependency (used by compute_dimensions, run_regressions)
 - [Phase 09.1]: Direct age-standardization with Brazil national age structure as standard population
