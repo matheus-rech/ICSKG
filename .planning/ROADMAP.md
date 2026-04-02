@@ -53,7 +53,13 @@ Plans:
   3. CNES professional Parquet contains surgeon, anesthesiologist, and obstetrician records filtered to CBO codes, with CNS identifiers retained for deduplication
   4. CNES facility Parquet contains all hospitals flagged as having a surgical center, obstetric center, or inpatient beds, with geocoordinates populated or geocoding attempted
   5. A PySUS `blast-dbf` pre-flight check passes, and every DBC-to-Parquet conversion asserts the output file exists with non-zero size before proceeding
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — SIH CSV-to-Parquet extraction with DuckDB column projection, test fixtures, municipality code normalization
+- [ ] 02-02-PLAN.md — SIH municipality-year aggregation and pipeline.py extract_sih() rewiring
+- [ ] 02-03-PLAN.md — CNES ST facility extraction from ETLCNES.zip, bellwether filter, CBO code constants
+- [ ] 02-04-PLAN.md — CNES PF professional download via PySUS, SAO filtering, pipeline.py extract_cnes() rewiring
 
 ### Phase 3: Secondary Source Extraction
 **Goal**: All seven remaining data sources are extracted, parsed, and stored as standardized Parquet files with IBGE municipality codes canonicalized
@@ -111,7 +117,7 @@ Plans:
   1. Six PanelOLS regressions (one per LCoGS outcome) complete using linearmodels 7.0 with municipality and year fixed effects, and results are saved to `results/regression_tables/`
   2. All regression standard errors are cluster-robust at the municipality level, and the clustering specification is verified in the model summary output
   3. Hausman test statistic and p-value for each regression outcome are logged to `results/hausman_test.csv`, confirming fixed-effects selection is justified (or documenting the exception if not)
-  4. Dose-response analysis produces a non-linear CUDS–LCoGS curve for at least one outcome, showing the relationship is not assumed to be linear
+  4. Dose-response analysis produces a non-linear CUDS-LCoGS curve for at least one outcome, showing the relationship is not assumed to be linear
   5. Sensitivity analysis results exist comparing arithmetic mean vs geometric mean CUDS, and a second sensitivity excluding municipalities with 2 or more missing dimensions — both stored in `results/sensitivity/`
 **Plans**: TBD
 
@@ -158,8 +164,8 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
-| 2. SIH & CNES Extraction | 0/TBD | Not started | - |
+| 1. Foundation | 4/4 | Complete | - |
+| 2. SIH & CNES Extraction | 0/4 | Not started | - |
 | 3. Secondary Source Extraction | 0/TBD | Not started | - |
 | 4. Panel Assembly & Validation | 0/TBD | Not started | - |
 | 5. Dimension Computation & CUDS | 0/TBD | Not started | - |
