@@ -75,12 +75,12 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — IBGE SIDRA population estimates + GDP extraction with per-capita computation
-- [ ] 03-02-PLAN.md — IPEA IDHM cross-sectional extraction + FIRJAN IFGF Excel parser
-- [ ] 03-01-PLAN.md — IBGE SIDRA population estimates + GDP extraction with per-capita computation
 - [x] 03-02-PLAN.md — IPEA IDHM cross-sectional extraction + FIRJAN IFGF Excel parser
-- [ ] 03-03-PLAN.md — ANS quarterly average beneficiaries + Census 2022 sanitation extraction
+- [x] 03-01-PLAN.md — IBGE SIDRA population estimates + GDP extraction with per-capita computation
+- [x] 03-02-PLAN.md — IPEA IDHM cross-sectional extraction + FIRJAN IFGF Excel parser
 - [x] 03-03-PLAN.md — ANS quarterly average beneficiaries + Census 2022 sanitation extraction
-- [ ] 03-04-PLAN.md — RENAVAM + SIOPS best-effort extraction + pipeline.py wiring for all secondary sources
+- [x] 03-03-PLAN.md — ANS quarterly average beneficiaries + Census 2022 sanitation extraction
+- [x] 03-04-PLAN.md — RENAVAM + SIOPS best-effort extraction + pipeline.py wiring for all secondary sources
 
 ### Phase 4: Panel Assembly & Validation
 **Goal**: A validated, deflated, imputed 50,130-row panel exists in SQLite with one row per municipality per year and a documented missingness profile
