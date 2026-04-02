@@ -1,0 +1,15 @@
+{
+  "agents": [
+    {
+      "agent_id": "ab814113265e66fe3",
+      "agent_type": "gsd-executor",
+      "started_at": "2026-04-01T22:55:46.923Z",
+      "parent_mode": "none",
+      "status": "running"
+    }
+  ],
+  "total_spawned": 1,
+  "total_completed": 0,
+  "total_failed": 0,
+  "last_updated": "2026-04-01T23:01:17.950Z"
+}
