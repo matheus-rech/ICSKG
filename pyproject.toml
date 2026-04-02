@@ -30,6 +30,10 @@ dependencies = [
     "SciencePlots>=2.1",
     # Geospatial
     "geopandas>=1.1",
+    "libpysal>=4.12",
+    "esda>=2.6",
+    "geobr>=0.2",
+    "mapclassify>=2.8",
     # Supporting utilities
     "openpyxl>=3.1",
     "tqdm>=4.64",
