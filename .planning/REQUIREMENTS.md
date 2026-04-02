@@ -90,14 +90,14 @@
 
 - [ ] **PUBL-01**: 4 publication-ready figures at 300 DPI minimum, colorblind-safe palette (CUDS map, CUDS trend, LCoGS heatmap, regression forest plot)
 - [ ] **PUBL-02**: 8 publication-ready tables (descriptive stats, dimension descriptives, missingness summary, correlation matrix, 4 regression result tables)
-- [ ] **PUBL-03**: STROBE checklist compliance (22 items) for observational studies
-- [ ] **PUBL-04**: RECORD extension compliance (13 items) for routinely collected health data
+- [x] **PUBL-03**: STROBE checklist compliance (22 items) for observational studies
+- [x] **PUBL-04**: RECORD extension compliance (13 items) for routinely collected health data
 - [ ] **PUBL-05**: Sensitivity analysis: arithmetic mean vs geometric mean CUDS
 - [ ] **PUBL-06**: Sensitivity analysis: excluding municipalities with ≥2 missing dimensions
-- [ ] **PUBL-07**: Complete data dictionary (variable name, source, definition, unit, coverage, missingness rate)
-- [ ] **PUBL-08**: Ethics statement citing Brazilian Resolution 510/2016
-- [ ] **PUBL-09**: Data availability statement with URLs to all source portals
-- [ ] **PUBL-10**: Zenodo DOI archive + public GitHub release at submission
+- [x] **PUBL-07**: Complete data dictionary (variable name, source, definition, unit, coverage, missingness rate)
+- [x] **PUBL-08**: Ethics statement citing Brazilian Resolution 510/2016
+- [x] **PUBL-09**: Data availability statement with URLs to all source portals
+- [x] **PUBL-10**: Zenodo DOI archive + public GitHub release at submission
 
 ## v2 Requirements
 
@@ -191,14 +191,14 @@
 | SPAT-04 | Phase 8 | Complete |
 | PUBL-01 | Phase 9 | Pending |
 | PUBL-02 | Phase 9 | Pending |
-| PUBL-03 | Phase 9 | Pending |
-| PUBL-04 | Phase 9 | Pending |
+| PUBL-03 | Phase 9 | Complete |
+| PUBL-04 | Phase 9 | Complete |
 | PUBL-05 | Phase 9 | Pending |
 | PUBL-06 | Phase 9 | Pending |
-| PUBL-07 | Phase 9 | Pending |
-| PUBL-08 | Phase 9 | Pending |
-| PUBL-09 | Phase 9 | Pending |
-| PUBL-10 | Phase 9 | Pending |
+| PUBL-07 | Phase 9 | Complete |
+| PUBL-08 | Phase 9 | Complete |
+| PUBL-09 | Phase 9 | Complete |
+| PUBL-10 | Phase 9 | Complete |
 
 **Coverage:**
 - v1 requirements: 48 total

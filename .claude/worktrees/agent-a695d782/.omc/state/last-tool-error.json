@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd \\\"/Users/matheusrech/untitled folder 6/ICSKG\\\" && git stash drop 2>&1 && git worktree remove .claude/worktrees/agent-a695d782 --force 2>&1 && git branch -d worktree-agent-a695d782 2>&1\"...",
-  "error": "Exit code 1\nDropped refs/stash@{0} (eeb08631ca165d76d482f2edd9f20e806b76e530)\nwarning: not deleting branch 'worktree-agent-a695d782' that is not yet merged to\n         'refs/remotes/origin/meta', even though it is merged to HEAD\nerror: the branch 'worktree-agent-a695d782' is not fully merged\nhint: If you are sure you want to delete it, run 'git branch -D worktree-agent-a695d782'\nhint: Disable this message with \"git config set advice.forceDeleteBranch false\"",
-  "timestamp": "2026-04-01T23:27:32.029Z",
-  "retry_count": 1
-}

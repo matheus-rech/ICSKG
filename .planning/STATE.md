@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 09.1-01-PLAN.md (EconML causal inference + PCA composite)
-last_updated: "2026-04-02T05:22:33.049Z"
+status: completed
+stopped_at: Completed 10-01-PLAN.md (publication figures + tables)
+last_updated: "2026-04-02T05:48:21.421Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 11
-  completed_phases: 10
-  total_plans: 22
-  completed_plans: 22
-  percent: 93
+  completed_phases: 11
+  total_plans: 24
+  completed_plans: 24
+  percent: 96
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-01)
 
 **Core value:** Reproducible, publicly-sourced database proving whether municipal urban development predicts surgical system performance — first subnational cross-reference of urban development composite indices with surgical indicators.
-**Current focus:** Phase 07 — statistical-analysis
+**Current focus:** Phase 10 — publication-package
 
 ## Current Position
 
 Phase: 10
 Plan: Not started
-Status: Phase complete — ready for verification
+Status: Completed 10-01-PLAN.md
 Last activity: 2026-04-02
 
-Progress: [█████████░] 93%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
@@ -70,12 +70,12 @@ Progress: [█████████░] 93%
 | Phase 06 P01 | 5min | 2 tasks | 3 files |
 | Phase 07 P01 | 4min | 2 tasks | 2 files |
 | Phase 08 P01 | 8min | 2 tasks | 4 files |
-=======
 | Phase 09 P01 | 7min | 2 tasks | 4 files |
->>>>>>> worktree-agent-a030292d
 | Phase 09.1 P01 | 3min | 2 tasks | 2 files |
 | Phase 09.1 P02 | 4min | 2 tasks | 3 files |
 | Phase 09.1 P03 | 5min | 2 tasks | 4 files |
+| Phase 10 P01 | 6min | 2 tasks | 4 files |
+| Phase 10 P02 | 7min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -135,8 +135,6 @@ Recent decisions affecting current work:
 - [Phase 09]: geobr pinned >=0.2 (not >=1.0) -- latest available is 0.2.2
 - [Phase 09]: Queen contiguity weights for Moran's I spatial autocorrelation (standard for areal data)
 
-<<<<<<< HEAD
-
 - [Phase 09.1]: LassoCV for DML nuisance models; CausalForestDML 500 trees for CATE
 - [Phase 09.1]: scipy>=1.13 added as missing dependency (used by compute_dimensions, run_regressions)
 - [Phase 09.1]: Direct age-standardization with Brazil national age structure as standard population
@@ -144,6 +142,9 @@ Recent decisions affecting current work:
 - [Phase 09.1]: Health region crosswalk 3-tier fallback: CSV > DATASUS > microregion proxy
 - [Phase 09.1]: t-distribution CI for mean_ci (not z-interval) -- correct for small n like CV folds
 - [Phase 09.1]: Self-contained _haversine_km in network_distances.py to avoid cross-module dependency
+- [Phase 10]: Forest plot uses horizontal errorbar with significance stars; Tables 5-8 group 6 regressions into 3 outcome pairs plus combined summary
+- [Phase 10]: Missingness table pivots wide (variables as rows, years as columns) for RECORD 12.1; Table 1 adds USD columns via BCB exchange rate
+- [Phase 10]: STROBE items use domain-specific manuscript section references with ICSKG-BR notes
 
 ### Pending Todos
 
@@ -158,8 +159,12 @@ None yet.
 
 ## Session Continuity
 
+Last session: 2026-04-02T05:43:00Z
+Stopped at: Completed 10-01-PLAN.md (publication figures + tables)
 Last session: 2026-04-02T05:10:09.194Z
 Stopped at: Completed 09.1-01-PLAN.md (EconML causal inference + PCA composite)
+Last session: 2026-04-02T05:45:15.206Z
+Stopped at: Completed 10-02-PLAN.md (STROBE/RECORD + data dictionary + Zenodo prep)
 Last session: 2026-04-02T05:19:09Z
 Stopped at: Completed 09.1-03-PLAN.md (CI/dispersion + network distance metrics)
 Last session: 2026-04-02T05:11:24.711Z

@@ -22,7 +22,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 8: Machine Learning Models** - Random Forest and XGBoost with region-stratified cross-validation and SHAP feature importance (completed 2026-04-02)
 - [ ] **Phase 9: Spatial Analysis** - Moran's I autocorrelation test, choropleth maps, and regional disparity analysis
 - [x] **Phase 9: Spatial Analysis** - Moran's I autocorrelation test, choropleth maps, and regional disparity analysis (completed 2026-04-02)
-- [ ] **Phase 10: Publication Package** - Publication-ready figures, tables, STROBE/RECORD checklists, data dictionary, and Zenodo release
+- [x] **Phase 10: Publication Package** - Publication-ready figures, tables, STROBE/RECORD checklists, data dictionary, and Zenodo release (completed 2026-04-02)
 
 ## Phase Details
 
@@ -202,7 +202,13 @@ Plans:
   3. STROBE checklist (22 items) and RECORD extension (13 items) are completed with manuscript section references for each item — no item left blank
   4. The data dictionary documents every variable with name, source, definition, unit, coverage years, and missingness rate, and matches the SQLite schema
   5. Zenodo archive is created with a DOI, GitHub release is tagged, and the data availability statement lists URLs for all 8 source portals
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — Publication-ready figures (CUDS temporal trend, regression forest plot) + 8 publication tables with CIs and BRL+USD
+- [ ] 10-02-PLAN.md — STROBE/RECORD checklists, data dictionary, ethics/data availability statements, Zenodo preparation
+- [x] 10-01-PLAN.md -- Publication figures (CUDS temporal trend, regression forest plot) and 8+ tables with CIs and BRL+USD
+- [ ] 10-02-PLAN.md -- STROBE/RECORD checklists, data dictionary, and Zenodo release preparation
 
 ## Progress
 
@@ -224,4 +230,6 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 | 9. Spatial Analysis | 0/1 | Not started | - |
 | 9. Spatial Analysis | 1/1 | Complete   | 2026-04-02 |
 | 9.1 Methodology Enhancements | 3/3 | Complete   | 2026-04-02 |
-| 10. Publication Package | 0/TBD | Not started | - |
+| 10. Publication Package | 0/2 | Complete    | 2026-04-02 |
+| 10. Publication Package | 1/2 | In progress | - |
+| 10. Publication Package | 1/2 | In Progress|  |
