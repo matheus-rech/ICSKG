@@ -121,6 +121,30 @@ CREATE TABLE IF NOT EXISTS dimension_scores (
 );
 """
 
+DDL_LCOGS_INDICATORS = """
+CREATE TABLE IF NOT EXISTS lcogs_indicators (
+    cod_ibge                TEXT    NOT NULL,
+    year                    INTEGER NOT NULL,
+    lcogs1_distance_km      REAL,
+    sao_per_100k            REAL,
+    surgical_volume_per_100k REAL,
+    pomr                    REAL,
+    financial_risk_ratio    REAL,
+    catastrophic_expenditure REAL,
+    PRIMARY KEY (cod_ibge, year)
+);
+"""
+
+DDL_LCOGS_METADATA = """
+CREATE TABLE IF NOT EXISTS lcogs_metadata (
+    indicator   TEXT PRIMARY KEY,
+    label       TEXT,
+    source      TEXT,
+    description TEXT,
+    caveat      TEXT
+);
+"""
+
 ALL_DDL = [
     DDL_MUNICIPAL_HEALTH,
     DDL_DIMENSION_METADATA,
@@ -128,6 +152,8 @@ ALL_DDL = [
     DDL_DEFLATION_LOG,
     DDL_IMPUTATION_LOG,
     DDL_DIMENSION_SCORES,
+    DDL_LCOGS_INDICATORS,
+    DDL_LCOGS_METADATA,
 ]
 
 
@@ -245,7 +271,7 @@ def create_schema(conn: sqlite3.Connection) -> None:
     for ddl in ALL_DDL:
         cur.executescript(ddl)
     conn.commit()
-    logger.info("Schema v3 initialised (6 tables created)")
+    logger.info("Schema v3 initialised (%d tables created)", len(ALL_DDL))
 
 
 def seed_dimension_metadata(conn: sqlite3.Connection) -> None:
