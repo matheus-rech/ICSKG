@@ -17,7 +17,7 @@
 ### Data Acquisition
 
 - [x] **DATA-01**: SIH processor — read raw SIH data from NAS (already downloaded, all 12 months × 9 years × 27 states), convert DBC→Parquet, aggregate to municipality-year level
-- [ ] **DATA-02**: CNES extractor — professional records (PF group) with CBO-based filtering for surgeons, anesthesiologists, obstetricians; facility records for bellwether hospital identification
+- [x] **DATA-02**: CNES extractor — professional records (PF group) with CBO-based filtering for surgeons, anesthesiologists, obstetricians; facility records for bellwether hospital identification
 - [ ] **DATA-01**: SIH processor — read raw SIH data from NAS (already downloaded, all 12 months × 9 years × 27 states), convert DBC→Parquet, aggregate to municipality-year level
 - [x] **DATA-02**: CNES extractor — professional records (PF group) with CBO-based filtering for surgeons, anesthesiologists, obstetricians; facility records for bellwether hospital identification
 - [ ] **DATA-03**: IBGE SIDRA extractor — population estimates (table 6579) and GDP per capita (table 5938) for all municipalities via API
@@ -120,7 +120,7 @@
 | FOUN-05 | Phase 1 | Complete |
 | FOUN-06 | Phase 1 | Complete |
 | DATA-01 | Phase 2 | Complete |
-| DATA-02 | Phase 2 | Pending |
+| DATA-02 | Phase 2 | Complete |
 | DATA-01 | Phase 2 | Pending |
 | DATA-02 | Phase 2 | Complete |
 | DATA-03 | Phase 2 | Pending |
