@@ -120,7 +120,10 @@ Plans:
   3. LCoGS-3 (surgical volume) and LCoGS-4 (POMR) are labeled as SUS-funded procedures only, and the POMR definition (in-hospital deaths within 30 days of surgical admission) is documented in a methods comment
   4. LCoGS-5 and LCoGS-6 (financial risk proxies) are computed as ratios of SIH procedure cost to GDP per capita (both in constant 2023 BRL), with ecological-proxy caveats noted in `lcogs_metadata` table
   5. SQLite `lcogs_indicators` table has 50,130 rows with all 6 indicators; any municipality-year with fewer than 10 surgical events has LCoGS-4 set to NaN rather than an unstable rate
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 06-01-PLAN.md — All 6 LCoGS indicator computations (haversine distance, SAO density, surgical volume, POMR, financial risk, catastrophic expenditure) + SQLite persistence
 
 ### Phase 7: Statistical Analysis
 **Goal**: Primary hypothesis tests are complete — two-way fixed-effects panel regressions of CUDS on each LCoGS outcome, with cluster-robust standard errors, Hausman test, and sensitivity analyses, all reproducible
@@ -182,7 +185,7 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 | 3. Secondary Source Extraction | 4/4 | Complete | - |
 | 4. Panel Assembly & Validation | 0/2 | Not started | - |
 | 5. Dimension Computation & CUDS | 0/1 | Not started | - |
-| 6. LCoGS Indicators | 0/TBD | Not started | - |
+| 6. LCoGS Indicators | 0/1 | Not started | - |
 | 7. Statistical Analysis | 0/TBD | Not started | - |
 | 8. Machine Learning Models | 0/TBD | Not started | - |
 | 9. Spatial Analysis | 0/TBD | Not started | - |
