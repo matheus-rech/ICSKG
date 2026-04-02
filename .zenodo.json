@@ -1,0 +1,45 @@
+{
+  "title": "ICSKG-BR: Index of Cities' Smartness & Knowledge for Global Surgery -- Brazil (2015-2023)",
+  "upload_type": "dataset",
+  "publication_type": "",
+  "description": "<p>The ICSKG-BR (Index of Cities' Smartness &amp; Knowledge for Global Surgery &mdash; Brazil) is a longitudinal ecological panel study that operationalises the IESE Cities in Motion Index (CIMI) 9-dimension framework as a Composite Urban Development Score (CUDS) and validates it against Lancet Commission on Global Surgery (LCoGS) indicators across all 5,570 Brazilian municipalities from 2015 to 2023.</p><p>This dataset contains:</p><ul><li>The assembled municipality-year panel (50,130 observations)</li><li>8 CIMI dimension scores with within-year min-max normalisation</li><li>CUDS composite via geometric mean</li><li>6 LCoGS indicators at municipal level</li><li>Municipality lookup, deflation log, imputation log</li></ul><p>All data are publicly sourced from Brazilian government agencies under Lei de Acesso a Informacao (Law 12.527/2011).</p>",
+  "creators": [
+    {
+      "name": "[Author Name]",
+      "affiliation": "[Institution]",
+      "orcid": ""
+    }
+  ],
+  "keywords": [
+    "global surgery",
+    "urban development",
+    "CIMI",
+    "Cities in Motion Index",
+    "LCoGS",
+    "Lancet Commission on Global Surgery",
+    "Brazil",
+    "ecological study",
+    "panel data",
+    "composite index",
+    "municipal health",
+    "CUDS"
+  ],
+  "license": "CC-BY-4.0",
+  "access_right": "open",
+  "language": "eng",
+  "related_identifiers": [
+    {
+      "identifier": "[GitHub URL]",
+      "relation": "isSupplementTo",
+      "resource_type": "software",
+      "scheme": "url"
+    }
+  ],
+  "communities": [
+    {
+      "identifier": "global-surgery"
+    }
+  ],
+  "notes": "This dataset accompanies the manuscript submitted to BMJ Global Health. All raw data are publicly available from the source portals listed in the Data Availability Statement.",
+  "version": "1.0.0"
+}
