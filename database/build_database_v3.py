@@ -1,21 +1,27 @@
 """
-ICSKG-BR Database Builder v3 — CIMI-aligned Schema
-====================================================
-Assembles the final ICSKG-BR relational database from the validated,
-deflated, imputed municipality-year panel produced by assemble_panel.py
-and impute_ifgf.py.
+ICSKG-BR Database Builder v3 — CIMI-aligned SQLite Schema
+============================================================
+Assembles the final ICSKG-BR relational database from the merged,
+validated, and imputed municipality-year panel produced by the Phase 4
+pipeline (assemble_panel -> impute_ifgf_mice -> build_database).
 
-Schema (v3) aligns with the CIMI 9-dimension framework (excluding D8
-International Projection). Tables:
-  - municipal_health      : (cod_ibge, year) PK, all source value columns
-  - dimension_metadata    : CIMI dimension definitions with cross-sectional flags
-  - municipality_lookup   : IBGE reference with region and population
-  - deflation_log         : IPCA deflation factors per year (audit trail)
-  - imputation_log        : IFGF imputation details per variable per year
+Schema v3 replaces the health-system-centric v2 dimensions with
+CIMI-aligned dimensions (D1 Governance through D9 Technology, excluding
+D8 International Projection). All 5 tables support audit trail
+requirements: deflation_log, imputation_log, dimension_metadata,
+municipality_lookup, and the main municipal_health panel.
 
 Outputs
 -------
-  database/icskg_br.sqlite   — SQLite portable database
+  database/icskg_br.sqlite — SQLite database with v3 schema
+
+Schema (5 tables)
+------------------
+  municipal_health     — (cod_ibge, year) PK panel with all source columns
+  dimension_metadata   — CIMI dimension definitions and weights
+  municipality_lookup  — IBGE codes, names, state, region
+  deflation_log        — IPCA deflation factors per year
+  imputation_log       — IFGF imputation method and per-year counts
 
 Usage
 -----
@@ -41,48 +47,13 @@ logging.basicConfig(
 
 
 # ---------------------------------------------------------------------------
-# Schema DDL (SQLite-compatible, v3 CIMI-aligned)
+# Schema DDL (SQLite v3)
 # ---------------------------------------------------------------------------
 
 DDL_MUNICIPAL_HEALTH = """
 CREATE TABLE IF NOT EXISTS municipal_health (
-    cod_ibge         TEXT    NOT NULL,
-    year             INTEGER NOT NULL,
-    ifgf_geral       REAL,
-    ifgf_ra          REAL,
-    ifgf_gp          REAL,
-    ifgf_id          REAL,
-    ifgf_el          REAL,
-    ifgf_sa          REAL,
-    ifgf_is_imputed  INTEGER DEFAULT 0,
-    gdp_per_capita   REAL,
-    gdp_per_capita_nominal REAL,
-    gdp_abs          REAL,
-    gdp_estimated    INTEGER,
-    idhm             REAL,
-    idhm_educacao    REAL,
-    idhm_longevidade REAL,
-    idhm_renda       REAL,
-    private_coverage_rate    REAL,
-    sus_dependence_rate      REAL,
-    beneficiarios_mean       REAL,
-    pct_sanitation_adequate  REAL,
-    pct_water_adequate       REAL,
-    vehicles_total           REAL,
-    vehicles_per_1000        REAL,
-    total_beds               REAL,
-    is_bellwether            INTEGER,
-    health_expenditure_per_capita          REAL,
-    health_expenditure_per_capita_nominal  REAL,
-    procedure_count          INTEGER,
-    total_value              REAL,
-    total_value_nominal      REAL,
-    deaths                   INTEGER,
-    aih_count                INTEGER,
-    total_days               INTEGER,
-    populacao                INTEGER,
-    sao_category             TEXT,
-    created_at       TEXT DEFAULT (datetime('now')),
+    cod_ibge    TEXT    NOT NULL,
+    year        INTEGER NOT NULL,
     PRIMARY KEY (cod_ibge, year)
 );
 """
@@ -111,10 +82,10 @@ CREATE TABLE IF NOT EXISTS municipality_lookup (
 
 DDL_DEFLATION_LOG = """
 CREATE TABLE IF NOT EXISTS deflation_log (
-    year             INTEGER PRIMARY KEY,
-    ipca_index_dec   REAL,
-    deflation_factor REAL,
-    base_year        INTEGER DEFAULT 2023
+    year              INTEGER PRIMARY KEY,
+    ipca_index_dec    REAL,
+    deflation_factor  REAL,
+    base_year         INTEGER DEFAULT 2023
 );
 """
 
@@ -142,40 +113,58 @@ ALL_DDL = [
 
 
 # ---------------------------------------------------------------------------
-# CIMI Dimensions (8 active, D8 excluded)
+# CIMI Dimension Metadata (8 active, D8 excluded)
 # ---------------------------------------------------------------------------
+
+# UF -> region mapping (IBGE standard macro-regions)
+UF_TO_REGION: dict[str, str] = {
+    # Norte
+    "AC": "Norte", "AP": "Norte", "AM": "Norte", "PA": "Norte",
+    "RO": "Norte", "RR": "Norte", "TO": "Norte",
+    # Nordeste
+    "AL": "Nordeste", "BA": "Nordeste", "CE": "Nordeste", "MA": "Nordeste",
+    "PB": "Nordeste", "PE": "Nordeste", "PI": "Nordeste", "RN": "Nordeste",
+    "SE": "Nordeste",
+    # Centro-Oeste
+    "DF": "Centro-Oeste", "GO": "Centro-Oeste", "MT": "Centro-Oeste",
+    "MS": "Centro-Oeste",
+    # Sudeste
+    "ES": "Sudeste", "MG": "Sudeste", "RJ": "Sudeste", "SP": "Sudeste",
+    # Sul
+    "PR": "Sul", "RS": "Sul", "SC": "Sul",
+}
 
 CIMI_DIMENSIONS: list[dict] = [
     {
         "key": "D1",
-        "label": "Governance",
+        "label": "Governance (IFGF)",
         "source": "FIRJAN/IFGF",
         "weight": 1.0,
-        "description": "IFGF fiscal management composite (5 sub-indices)",
+        "description": "IFGF fiscal management composite index",
         "is_crosssectional": 0,
         "crosssectional_year": None,
     },
     {
         "key": "D2",
-        "label": "Economy",
-        "source": "IBGE SIDRA",
+        "label": "Economy (GDP per capita)",
+        "source": "IBGE/SIDRA",
         "weight": 1.0,
-        "description": "GDP per capita (deflated to 2023 BRL)",
+        "description": "GDP per capita deflated to constant 2023 BRL",
         "is_crosssectional": 0,
         "crosssectional_year": None,
     },
     {
         "key": "D3",
-        "label": "Human Capital",
+        "label": "Human Capital (IDHM)",
         "source": "IPEA/IDHM",
         "weight": 1.0,
-        "description": "IDHM composite (education + longevity + income)",
+        "description": "IDHM composite + sub-indices (education, longevity, income)",
         "is_crosssectional": 1,
         "crosssectional_year": 2010,
     },
     {
         "key": "D4",
-        "label": "Social Cohesion",
+        "label": "Social Cohesion (SUS dependence)",
         "source": "ANS/IBGE",
         "weight": 1.0,
         "description": "SUS dependence rate (100 - ANS private coverage %)",
@@ -184,16 +173,16 @@ CIMI_DIMENSIONS: list[dict] = [
     },
     {
         "key": "D5",
-        "label": "Environment",
-        "source": "IBGE Census 2022",
+        "label": "Environment (Sanitation)",
+        "source": "IBGE/Census 2022",
         "weight": 1.0,
-        "description": "Adequate sanitation % (esgotamento sanitario + abastecimento)",
+        "description": "Adequate sanitation % from Census 2022",
         "is_crosssectional": 1,
         "crosssectional_year": 2022,
     },
     {
         "key": "D6",
-        "label": "Mobility",
+        "label": "Mobility (Vehicle fleet)",
         "source": "RENAVAM/DENATRAN",
         "weight": 1.0,
         "description": "Vehicles per 1,000 inhabitants",
@@ -202,7 +191,7 @@ CIMI_DIMENSIONS: list[dict] = [
     },
     {
         "key": "D7",
-        "label": "Urban Planning",
+        "label": "Urban Planning (Hospital capacity)",
         "source": "CNES/DATASUS",
         "weight": 1.0,
         "description": "Hospital beds per 10,000 inhabitants",
@@ -211,8 +200,8 @@ CIMI_DIMENSIONS: list[dict] = [
     },
     {
         "key": "D9",
-        "label": "Technology",
-        "source": "SIOPS/IBGE",
+        "label": "Technology (Health expenditure)",
+        "source": "SIOPS/MS",
         "weight": 1.0,
         "description": "Per-capita health expenditure as technology proxy",
         "is_crosssectional": 0,
@@ -222,28 +211,11 @@ CIMI_DIMENSIONS: list[dict] = [
 
 
 # ---------------------------------------------------------------------------
-# UF-to-region mapping
-# ---------------------------------------------------------------------------
-
-UF_TO_REGION: dict[str, str] = {
-    "AC": "Norte", "AP": "Norte", "AM": "Norte", "PA": "Norte",
-    "RO": "Norte", "RR": "Norte", "TO": "Norte",
-    "AL": "Nordeste", "BA": "Nordeste", "CE": "Nordeste", "MA": "Nordeste",
-    "PB": "Nordeste", "PE": "Nordeste", "PI": "Nordeste", "RN": "Nordeste",
-    "SE": "Nordeste",
-    "DF": "Centro-Oeste", "GO": "Centro-Oeste", "MT": "Centro-Oeste",
-    "MS": "Centro-Oeste",
-    "ES": "Sudeste", "MG": "Sudeste", "RJ": "Sudeste", "SP": "Sudeste",
-    "PR": "Sul", "RS": "Sul", "SC": "Sul",
-}
-
-
-# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
 def create_schema(conn: sqlite3.Connection) -> None:
-    """Create all v3 schema tables (IF NOT EXISTS).
+    """Execute all CREATE TABLE IF NOT EXISTS DDL statements.
 
     Parameters
     ----------
@@ -254,63 +226,73 @@ def create_schema(conn: sqlite3.Connection) -> None:
     for ddl in ALL_DDL:
         cur.executescript(ddl)
     conn.commit()
-    logger.info("Schema v3 created (5 tables)")
+    logger.info("Schema v3 initialised (5 tables created)")
 
 
 def seed_dimension_metadata(conn: sqlite3.Connection) -> None:
-    """Seed dimension_metadata with 8 active CIMI dimensions.
+    """Seed dimension_metadata table with 8 active CIMI dimensions.
 
-    D8 (International Projection) is excluded per project decision.
-    D3 (Human Capital/IDHM) is marked cross-sectional 2010.
-    D5 (Environment/Census) is marked cross-sectional 2022.
+    D8 (International Projection) is excluded as irrelevant at
+    municipal level for 99%% of Brazilian municipalities.
 
     Parameters
     ----------
     conn : sqlite3.Connection
-        Open SQLite connection with schema already created.
+        Open SQLite connection (schema must exist).
     """
     cur = conn.cursor()
     cur.executemany(
         "INSERT OR REPLACE INTO dimension_metadata "
-        "(key, label, source, weight, description, is_crosssectional, crosssectional_year) "
-        "VALUES (:key, :label, :source, :weight, :description, "
-        ":is_crosssectional, :crosssectional_year)",
-        CIMI_DIMENSIONS,
+        "(key, label, source, weight, description, "
+        "is_crosssectional, crosssectional_year) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+            (
+                d["key"], d["label"], d["source"], d["weight"],
+                d["description"], d["is_crosssectional"],
+                d["crosssectional_year"],
+            )
+            for d in CIMI_DIMENSIONS
+        ],
     )
     conn.commit()
-    logger.info("Seeded %d CIMI dimension-metadata rows", len(CIMI_DIMENSIONS))
+    logger.info(
+        "Seeded %d CIMI dimension metadata rows (D8 excluded)",
+        len(CIMI_DIMENSIONS),
+    )
 
 
 def seed_municipality_lookup(conn: sqlite3.Connection) -> None:
-    """Populate municipality_lookup from IBGE 2023 reference.
+    """Populate municipality_lookup from IBGE 2023 reference list.
 
-    Derives region from UF using standard Brazilian macro-region mapping.
+    Derives region from UF using standard IBGE macro-region mapping.
 
     Parameters
     ----------
     conn : sqlite3.Connection
-        Open SQLite connection with schema already created.
+        Open SQLite connection (schema must exist).
     """
     from database.utils import load_ibge_municipios  # noqa: PLC0415
 
     ref = load_ibge_municipios()
-    ref = ref.copy()
-    ref["region"] = ref["uf"].map(UF_TO_REGION)
+    ref = ref.rename(columns={"nome_municipio": "name", "uf": "state_uf"})
+    ref["region"] = ref["state_uf"].map(UF_TO_REGION)
 
+    # Only keep columns matching the schema
+    lookup_cols = ["cod_ibge", "name", "state_uf", "region"]
+    lookup_df = ref[lookup_cols].copy()
+
+    # Use INSERT OR REPLACE for idempotency
     cur = conn.cursor()
-    for _, row in ref.iterrows():
-        cur.execute(
-            "INSERT OR REPLACE INTO municipality_lookup "
-            "(cod_ibge, name, state_uf, region) VALUES (?, ?, ?, ?)",
-            (
-                str(row["cod_ibge"]),
-                str(row.get("nome_municipio", "")),
-                str(row.get("uf", "")),
-                str(row.get("region", "")),
-            ),
-        )
+    cur.executemany(
+        "INSERT OR REPLACE INTO municipality_lookup "
+        "(cod_ibge, name, state_uf, region) VALUES (?, ?, ?, ?)",
+        lookup_df.values.tolist(),
+    )
     conn.commit()
-    logger.info("Seeded %d municipality_lookup rows", len(ref))
+    logger.info(
+        "Seeded %d municipality_lookup rows", len(lookup_df),
+    )
 
 
 def seed_deflation_log(
@@ -322,110 +304,125 @@ def seed_deflation_log(
     Parameters
     ----------
     conn : sqlite3.Connection
-        Open SQLite connection with schema already created.
+        Open SQLite connection (schema must exist).
     ipca_df : pd.DataFrame
         Must have columns: year, ipca_index, deflation_factor.
     """
     cur = conn.cursor()
+    rows = []
     for _, row in ipca_df.iterrows():
-        cur.execute(
-            "INSERT OR REPLACE INTO deflation_log "
-            "(year, ipca_index_dec, deflation_factor, base_year) "
-            "VALUES (?, ?, ?, ?)",
-            (
-                int(row["year"]),
-                float(row["ipca_index"]),
-                float(row["deflation_factor"]),
-                2023,
-            ),
-        )
+        rows.append((
+            int(row["year"]),
+            float(row["ipca_index"]),
+            float(row["deflation_factor"]),
+            2023,
+        ))
+    cur.executemany(
+        "INSERT OR REPLACE INTO deflation_log "
+        "(year, ipca_index_dec, deflation_factor, base_year) "
+        "VALUES (?, ?, ?, ?)",
+        rows,
+    )
     conn.commit()
-    logger.info("Seeded deflation_log with %d years", len(ipca_df))
+    logger.info("Seeded %d deflation_log rows", len(rows))
 
 
 def seed_imputation_log(
     conn: sqlite3.Connection,
     imputation_log: dict,
 ) -> None:
-    """Populate imputation_log from the IFGF imputation results.
+    """Populate imputation_log from IFGF imputation results.
 
-    Creates one row per (variable, year) combination.
+    Creates one row per (variable, year) combination from the
+    imputation log dictionary.
 
     Parameters
     ----------
     conn : sqlite3.Connection
-        Open SQLite connection with schema already created.
+        Open SQLite connection (schema must exist).
     imputation_log : dict
-        Output from impute_ifgf_mice(). Must have keys:
-        m, max_iter, method, n_imputed_rows, ifgf_cols, aux_cols, per_year.
+        Output of impute_ifgf_mice(), must have keys:
+        m, max_iter, method, ifgf_cols, aux_cols, per_year.
     """
-    if imputation_log.get("n_imputed_rows", 0) == 0:
-        logger.info("No imputed rows -- skipping imputation_log seeding")
-        return
-
     cur = conn.cursor()
-    ifgf_cols = imputation_log.get("ifgf_cols", [])
-    per_year = imputation_log.get("per_year", {})
-    method = imputation_log.get("method", "unknown")
     m = imputation_log.get("m", 5)
     max_iter = imputation_log.get("max_iter", 10)
-    aux_vars = ",".join(imputation_log.get("aux_cols", []))
+    method = imputation_log.get("method", "unknown")
+    ifgf_cols = imputation_log.get("ifgf_cols", [])
+    aux_cols = imputation_log.get("aux_cols", [])
+    per_year = imputation_log.get("per_year", {})
+    aux_str = ", ".join(aux_cols)
 
-    count = 0
+    rows = []
     for year, n_imputed in per_year.items():
-        for col in ifgf_cols:
-            cur.execute(
-                "INSERT OR REPLACE INTO imputation_log "
-                "(variable, year, n_imputed, n_total, method, "
-                "m_imputations, max_iter, aux_variables) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (col, int(year), n_imputed, None, method, m, max_iter, aux_vars),
-            )
-            count += 1
+        for variable in ifgf_cols:
+            rows.append((
+                variable,
+                int(year),
+                n_imputed,
+                None,  # n_total not tracked per-variable
+                method,
+                m,
+                max_iter,
+                aux_str,
+            ))
 
+    cur.executemany(
+        "INSERT OR REPLACE INTO imputation_log "
+        "(variable, year, n_imputed, n_total, method, "
+        "m_imputations, max_iter, aux_variables) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        rows,
+    )
     conn.commit()
-    logger.info("Seeded imputation_log with %d entries", count)
+    logger.info("Seeded %d imputation_log rows", len(rows))
 
 
 def load_panel(
     conn: sqlite3.Connection,
     panel: pd.DataFrame,
 ) -> int:
-    """Load the panel DataFrame into the municipal_health table.
+    """Load the assembled panel into municipal_health table.
 
-    Uses df.to_sql with if_exists='replace' for idempotent batch insert.
-    NOT iterrows() — batch insert per research anti-pattern guidance.
+    Uses pandas df.to_sql with if_exists="replace" for idempotency
+    (NOT iterrows -- batch insert per research anti-pattern guidance).
 
     Parameters
     ----------
     conn : sqlite3.Connection
-        Open SQLite connection with schema already created.
+        Open SQLite connection (schema must exist).
     panel : pd.DataFrame
-        Validated, deflated, imputed panel.
+        The assembled, imputed panel DataFrame.
 
     Returns
     -------
     int
         Number of rows inserted.
     """
-    # Drop the auto-generated created_at — let SQLite default handle it
-    panel = panel.copy()
+    n_rows = len(panel)
+    panel.to_sql(
+        "municipal_health",
+        conn,
+        if_exists="replace",
+        index=False,
+    )
 
-    # Ensure cod_ibge is string
-    panel["cod_ibge"] = panel["cod_ibge"].astype(str)
-    panel["year"] = panel["year"].astype(int)
+    # Verify row count
+    actual = conn.execute(
+        "SELECT COUNT(*) FROM municipal_health"
+    ).fetchone()[0]
 
-    # Use to_sql with replace for idempotent loading
-    panel.to_sql("municipal_health", conn, if_exists="replace", index=False)
+    if actual != n_rows:
+        logger.warning(
+            "load_panel: expected %d rows but found %d in municipal_health",
+            n_rows, actual,
+        )
+    else:
+        logger.info(
+            "load_panel: %d rows loaded into municipal_health", actual,
+        )
 
-    # Re-create the PRIMARY KEY constraint after replace
-    # (to_sql with replace drops the table and recreates without constraints)
-    # We need to add it back via a temp table approach
-    _ensure_primary_key(conn)
-
-    n_rows = conn.execute("SELECT COUNT(*) FROM municipal_health").fetchone()[0]
-    logger.info("Loaded %d rows into municipal_health", n_rows)
-    return n_rows
+    return actual
 
 
 def build_database(
@@ -435,38 +432,32 @@ def build_database(
     db_path: Path | str,
     processed_dir: Path | str | None = None,
 ) -> Path:
-    """Orchestrate the full database build.
-
-    Sequence: create_schema -> seed_dimension_metadata ->
-    seed_municipality_lookup -> seed_deflation_log ->
-    seed_imputation_log -> load_panel -> generate_missingness_report.
+    """Orchestrate full database build: schema -> seed -> load -> report.
 
     Parameters
     ----------
     panel : pd.DataFrame
-        Validated, deflated, imputed panel.
+        The assembled, imputed panel.
     ipca_df : pd.DataFrame
-        IPCA factors with columns: year, ipca_index, deflation_factor.
+        IPCA deflation factors.
     imputation_log : dict
-        Output from impute_ifgf_mice().
+        Output of impute_ifgf_mice().
     db_path : Path or str
-        SQLite database output path.
+        Output SQLite file path.
     processed_dir : Path or str, optional
         Directory for PANL-06-missingness.csv output.
 
     Returns
     -------
     Path
-        Path to the created SQLite database.
+        The database file path (confirmed written).
     """
-    from database.impute_ifgf import generate_missingness_report  # noqa: PLC0415
-
     db_path = Path(db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
-    logger.info("─" * 60)
-    logger.info("DATABASE BUILD v3: %s", db_path)
-    logger.info("─" * 60)
+    logger.info("=" * 60)
+    logger.info("BUILD DATABASE v3: %s", db_path)
+    logger.info("=" * 60)
 
     conn = sqlite3.connect(str(db_path))
 
@@ -476,11 +467,24 @@ def build_database(
         seed_municipality_lookup(conn)
         seed_deflation_log(conn, ipca_df)
         seed_imputation_log(conn, imputation_log)
+
         n = load_panel(conn, panel)
+        logger.info("Panel loaded: %d rows", n)
+
+        # Generate missingness report if processed_dir provided
+        if processed_dir is not None:
+            processed_dir = Path(processed_dir)
+            from database.impute_ifgf import (  # noqa: PLC0415
+                generate_missingness_report,
+            )
+            missingness_path = processed_dir / "PANL-06-missingness.csv"
+            generate_missingness_report(panel, missingness_path)
 
         # Log table sizes
-        for table in ["municipal_health", "dimension_metadata",
-                      "municipality_lookup", "deflation_log", "imputation_log"]:
+        for table in [
+            "municipal_health", "dimension_metadata",
+            "municipality_lookup", "deflation_log", "imputation_log",
+        ]:
             count = conn.execute(
                 "SELECT COUNT(*) FROM %s" % table
             ).fetchone()[0]
@@ -489,40 +493,36 @@ def build_database(
     finally:
         conn.close()
 
-    # Generate missingness report
-    if processed_dir is not None:
-        processed_dir = Path(processed_dir)
-        processed_dir.mkdir(parents=True, exist_ok=True)
-        missingness_path = processed_dir / "PANL-06-missingness.csv"
-        generate_missingness_report(panel, missingness_path)
-
-    logger.info("Database build complete: %d rows in municipal_health", n)
+    logger.info("Database build complete: %s", db_path)
     return db_path
 
 
-def main(argv=None) -> int:
-    """CLI entry point: assemble -> impute -> persist.
+# ---------------------------------------------------------------------------
+# CLI entry point
+# ---------------------------------------------------------------------------
 
-    End-to-end Phase 4 orchestrator.
+def main(argv: list[str] | None = None) -> int:
+    """End-to-end Phase 4 orchestrator: assemble -> impute -> persist.
 
     Usage
     -----
-        python database/build_database_v3.py --processed-dir data_sources/processed \\
-                                              --db-dir database \\
-                                              --years 2015 2023
+        python database/build_database_v3.py \\
+            --processed-dir data_sources/processed \\
+            --db-dir database \\
+            --years 2015 2023
     """
     parser = argparse.ArgumentParser(
-        description="ICSKG-BR database builder v3 (CIMI-aligned)"
+        description="ICSKG-BR database builder v3 (CIMI-aligned schema)",
     )
     parser.add_argument(
         "--processed-dir",
         default="data_sources/processed",
-        help="Root of processed Parquet files",
+        help="Root directory for processed source files",
     )
     parser.add_argument(
         "--db-dir",
         default="database",
-        help="Output directory for SQLite database",
+        help="Directory for output SQLite database",
     )
     parser.add_argument(
         "--years",
@@ -530,7 +530,7 @@ def main(argv=None) -> int:
         type=int,
         default=[2015, 2023],
         metavar=("START", "END"),
-        help="Year range (inclusive start, exclusive end for range())",
+        help="Start and end years (inclusive)",
     )
     args = parser.parse_args(argv)
 
@@ -538,97 +538,48 @@ def main(argv=None) -> int:
     db_dir = Path(args.db_dir)
     db_dir.mkdir(parents=True, exist_ok=True)
     db_path = db_dir / "icskg_br.sqlite"
-
     years = range(args.years[0], args.years[1] + 1)
 
-    # ------------------------------------------------------------------
+    logger.info("─" * 60)
+    logger.info("PHASE 4 PIPELINE: assemble -> impute -> persist")
+    logger.info("─" * 60)
+
     # Step 1: Assemble panel
-    # ------------------------------------------------------------------
     from database.assemble_panel import assemble_panel  # noqa: PLC0415
-    from database.deflate_ipca import fetch_ipca_annual_index  # noqa: PLC0415
-    from database.impute_ifgf import impute_ifgf_mice  # noqa: PLC0415
-
-    logger.info("=== Phase 4 Pipeline: Assemble -> Impute -> Persist ===")
-
     panel, reports = assemble_panel(
         processed_dir=processed_dir,
         years=years,
     )
+    logger.info("Panel assembled: %d rows, %d columns", len(panel), len(panel.columns))
 
-    # ------------------------------------------------------------------
-    # Step 2: Impute IFGF
-    # ------------------------------------------------------------------
-    panel, imputation_log = impute_ifgf_mice(panel, m=5, max_iter=10)
-
-    # ------------------------------------------------------------------
-    # Step 3: Fetch IPCA for deflation log
-    # ------------------------------------------------------------------
+    # Step 2: Fetch IPCA factors for deflation log
+    from database.deflate_ipca import (  # noqa: PLC0415
+        fetch_ipca_annual_index,
+    )
     try:
         ipca_df = fetch_ipca_annual_index(years=list(years), base_year=2023)
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Could not fetch IPCA for deflation_log: %s", exc)
+        logger.warning(
+            "Could not fetch IPCA factors for deflation log: %s", exc,
+        )
         ipca_df = pd.DataFrame(columns=["year", "ipca_index", "deflation_factor"])
 
-    # ------------------------------------------------------------------
+    # Step 3: Impute IFGF
+    from database.impute_ifgf import impute_ifgf_mice  # noqa: PLC0415
+    panel, imp_log = impute_ifgf_mice(panel, m=5, max_iter=10)
+    logger.info("IFGF imputation: %d rows imputed", imp_log["n_imputed_rows"])
+
     # Step 4: Build database
-    # ------------------------------------------------------------------
     build_database(
         panel=panel,
         ipca_df=ipca_df,
-        imputation_log=imputation_log,
+        imputation_log=imp_log,
         db_path=db_path,
         processed_dir=processed_dir,
     )
 
-    logger.info("=== Phase 4 Pipeline Complete ===")
+    logger.info("Phase 4 pipeline complete. Database: %s", db_path)
     return 0
-
-
-# ---------------------------------------------------------------------------
-# Private helpers
-# ---------------------------------------------------------------------------
-
-def _ensure_primary_key(conn: sqlite3.Connection) -> None:
-    """Re-create PRIMARY KEY on municipal_health after to_sql replace.
-
-    to_sql(if_exists='replace') drops the table and recreates without
-    constraints. This function rebuilds the table with the PK.
-    """
-    cur = conn.cursor()
-
-    # Check if PK already exists by trying to get table info
-    try:
-        # Get existing columns
-        col_info = cur.execute("PRAGMA table_info(municipal_health)").fetchall()
-        col_names = [c[1] for c in col_info]
-
-        # Check if PK constraint exists (pk column > 0)
-        has_pk = any(c[5] > 0 for c in col_info)
-        if has_pk:
-            return  # PK already exists
-
-        # Rebuild with PK constraint
-        cols_def = ", ".join(col_names)
-
-        cur.execute("ALTER TABLE municipal_health RENAME TO _mh_temp")
-        cur.execute(DDL_MUNICIPAL_HEALTH)
-
-        # Copy data back, selecting only columns that exist in both
-        existing_in_ddl = [c[1] for c in cur.execute(
-            "PRAGMA table_info(municipal_health)"
-        ).fetchall()]
-        common_cols = [c for c in col_names if c in existing_in_ddl]
-        common_str = ", ".join(common_cols)
-
-        cur.execute(
-            "INSERT OR REPLACE INTO municipal_health (%s) "
-            "SELECT %s FROM _mh_temp" % (common_str, common_str)
-        )
-        cur.execute("DROP TABLE _mh_temp")
-        conn.commit()
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("Could not ensure PK on municipal_health: %s", exc)
-        conn.rollback()
 
 
 if __name__ == "__main__":

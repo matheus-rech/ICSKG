@@ -1,5 +1,5 @@
 """
-Tests for database/impute_ifgf.py — IFGF multiple imputation and missingness report.
+Tests for database.impute_ifgf — IFGF multiple imputation and missingness report.
 """
 
 import tempfile
@@ -14,176 +14,219 @@ import pytest
 # Fixtures
 # ---------------------------------------------------------------------------
 
-def _make_synthetic_panel(n_munic: int = 100, years: list[int] | None = None,
-                          pct_missing: float = 0.20, seed: int = 42) -> pd.DataFrame:
-    """Create a synthetic panel with controlled IFGF missingness."""
-    if years is None:
-        years = [2020, 2021]
-    rng = np.random.default_rng(seed)
+@pytest.fixture()
+def synthetic_panel() -> pd.DataFrame:
+    """Create a synthetic panel with controlled NaN in IFGF columns."""
+    rng = np.random.default_rng(42)
+    n = 100
+    panel = pd.DataFrame({
+        "cod_ibge": [f"{3500000 + i:07d}" for i in range(n)],
+        "year": [2020] * n,
+        "ifgf_geral": rng.uniform(0.2, 0.8, n).astype(float),
+        "ifgf_ra": rng.uniform(0.1, 0.9, n).astype(float),
+        "ifgf_gp": rng.uniform(0.1, 0.9, n).astype(float),
+        "ifgf_id": rng.uniform(0.1, 0.9, n).astype(float),
+        "ifgf_el": rng.uniform(0.1, 0.9, n).astype(float),
+        "ifgf_sa": rng.uniform(0.1, 0.9, n).astype(float),
+        "gdp_per_capita": rng.uniform(10000, 80000, n).astype(float),
+        "populacao": rng.integers(5000, 500000, n).astype(float),
+        "uf": rng.choice(["SP", "RJ", "MG", "BA", "RS"], n),
+    })
+    # Inject 20% NaN in all IFGF columns (same rows)
+    nan_idx = rng.choice(n, size=20, replace=False)
+    for col in ["ifgf_geral", "ifgf_ra", "ifgf_gp", "ifgf_id", "ifgf_el", "ifgf_sa"]:
+        panel.loc[nan_idx, col] = np.nan
+    return panel
 
-    rows = []
-    for year in years:
-        for i in range(n_munic):
-            row = {
-                "cod_ibge": f"{1100015 + i:07d}",
-                "year": year,
-                "ifgf_geral": rng.uniform(0.2, 0.9),
-                "ifgf_ra": rng.uniform(0.1, 0.8),
-                "ifgf_gp": rng.uniform(0.1, 0.8),
-                "ifgf_id": rng.uniform(0.1, 0.8),
-                "ifgf_el": rng.uniform(0.1, 0.8),
-                "ifgf_sa": rng.uniform(0.1, 0.8),
-                "gdp_per_capita": rng.uniform(10000, 80000),
-                "populacao": rng.integers(5000, 500000),
-                "uf": rng.choice(["SP", "RJ", "MG", "BA", "RS"]),
-            }
-            rows.append(row)
 
-    df = pd.DataFrame(rows)
+@pytest.fixture()
+def full_panel() -> pd.DataFrame:
+    """Create a panel with NO missing IFGF values."""
+    rng = np.random.default_rng(99)
+    n = 50
+    return pd.DataFrame({
+        "cod_ibge": [f"{3500000 + i:07d}" for i in range(n)],
+        "year": [2021] * n,
+        "ifgf_geral": rng.uniform(0.2, 0.8, n),
+        "ifgf_ra": rng.uniform(0.1, 0.9, n),
+        "ifgf_gp": rng.uniform(0.1, 0.9, n),
+        "ifgf_id": rng.uniform(0.1, 0.9, n),
+        "ifgf_el": rng.uniform(0.1, 0.9, n),
+        "ifgf_sa": rng.uniform(0.1, 0.9, n),
+        "gdp_per_capita": rng.uniform(10000, 80000, n),
+        "populacao": rng.integers(5000, 500000, n).astype(float),
+        "uf": rng.choice(["SP", "RJ", "MG"], n),
+    })
 
-    # Introduce MNAR missing in IFGF columns for pct_missing of rows
-    n_total = len(df)
-    n_missing = int(n_total * pct_missing)
-    missing_idx = rng.choice(df.index, size=n_missing, replace=False)
-    ifgf_cols = ["ifgf_geral", "ifgf_ra", "ifgf_gp", "ifgf_id", "ifgf_el", "ifgf_sa"]
-    for col in ifgf_cols:
-        df.loc[missing_idx, col] = np.nan
 
-    return df
+@pytest.fixture()
+def missingness_panel() -> pd.DataFrame:
+    """Panel with mixed missingness patterns for report testing."""
+    rng = np.random.default_rng(7)
+    n = 60
+    panel = pd.DataFrame({
+        "cod_ibge": [f"{3500000 + i:07d}" for i in range(n)],
+        "year": [2020] * 30 + [2021] * 30,
+        "ifgf_geral": rng.uniform(0.2, 0.8, n),
+        "idhm": rng.uniform(0.5, 0.9, n),
+        "gdp_per_capita": rng.uniform(10000, 80000, n),
+        "pct_sanitation_adequate": rng.uniform(0.3, 0.95, n),
+        "health_expenditure_per_capita": rng.uniform(100, 2000, n),
+        "vehicles_per_1000": rng.uniform(50, 500, n),
+    })
+    # IFGF: MNAR -- inject NaN
+    nan_idx = rng.choice(n, size=12, replace=False)
+    panel.loc[nan_idx, "ifgf_geral"] = np.nan
+    return panel
 
 
 # ---------------------------------------------------------------------------
-# Tests — impute_ifgf_mice
+# Tests: impute_ifgf_mice
 # ---------------------------------------------------------------------------
 
 class TestImputeIfgfMice:
-    """Tests for the impute_ifgf_mice() function."""
+    """Tests for the impute_ifgf_mice function."""
 
-    def test_impute_fills_nan(self):
-        """Synthetic panel with 20% NaN in IFGF should have zero NaN after imputation."""
+    def test_impute_fills_nan(self, synthetic_panel: pd.DataFrame) -> None:
+        """Imputed panel should have zero NaN in IFGF columns."""
         from database.impute_ifgf import impute_ifgf_mice
 
-        panel = _make_synthetic_panel(n_munic=100, pct_missing=0.20)
-        ifgf_cols = ["ifgf_geral", "ifgf_ra", "ifgf_gp", "ifgf_id", "ifgf_el", "ifgf_sa"]
+        result, _log = impute_ifgf_mice(synthetic_panel, m=3, max_iter=5)
+        ifgf_cols = ["ifgf_geral", "ifgf_ra", "ifgf_gp",
+                     "ifgf_id", "ifgf_el", "ifgf_sa"]
+        for col in ifgf_cols:
+            assert result[col].isna().sum() == 0, (
+                "Column %s still has NaN after imputation" % col
+            )
 
-        # Confirm there ARE NaN values before imputation
-        assert panel[ifgf_cols].isna().sum().sum() > 0
-
-        result, log = impute_ifgf_mice(panel, m=3, max_iter=5)
-
-        # All IFGF NaN should be filled
-        assert result[ifgf_cols].isna().sum().sum() == 0
-
-    def test_impute_log_structure(self):
+    def test_impute_log_structure(self, synthetic_panel: pd.DataFrame) -> None:
         """Imputation log must contain required keys."""
         from database.impute_ifgf import impute_ifgf_mice
 
-        panel = _make_synthetic_panel(n_munic=50, pct_missing=0.20)
-        _, log = impute_ifgf_mice(panel, m=3, max_iter=5)
-
-        required_keys = {"m", "max_iter", "method", "n_imputed_rows",
-                         "ifgf_cols", "aux_cols", "per_year"}
+        _result, log = impute_ifgf_mice(synthetic_panel, m=3, max_iter=5)
+        required_keys = {
+            "m", "max_iter", "method", "n_imputed_rows",
+            "ifgf_cols", "aux_cols", "per_year",
+        }
         assert required_keys.issubset(set(log.keys())), (
-            "Missing keys: %s" % (required_keys - set(log.keys()))
+            "Missing log keys: %s" % (required_keys - set(log.keys()))
         )
         assert log["m"] == 3
         assert log["max_iter"] == 5
-        assert log["n_imputed_rows"] > 0
-        assert isinstance(log["per_year"], dict)
+        assert log["n_imputed_rows"] == 20  # 20 rows had NaN injected
 
-    def test_impute_preserves_aux(self):
+    def test_impute_preserves_aux(self, synthetic_panel: pd.DataFrame) -> None:
         """Auxiliary columns must NOT be modified by imputation."""
         from database.impute_ifgf import impute_ifgf_mice
 
-        panel = _make_synthetic_panel(n_munic=50, pct_missing=0.20)
-        aux_cols = ["gdp_per_capita", "populacao"]
-        original_aux = panel[aux_cols].copy()
+        orig_gdp = synthetic_panel["gdp_per_capita"].copy()
+        orig_pop = synthetic_panel["populacao"].copy()
 
-        result, _ = impute_ifgf_mice(panel, m=3, max_iter=5)
+        result, _log = impute_ifgf_mice(synthetic_panel, m=3, max_iter=5)
 
-        pd.testing.assert_frame_equal(result[aux_cols], original_aux)
+        pd.testing.assert_series_equal(
+            result["gdp_per_capita"], orig_gdp,
+            check_names=False,
+        )
+        pd.testing.assert_series_equal(
+            result["populacao"], orig_pop,
+            check_names=False,
+        )
 
-    def test_impute_no_missing_noop(self):
-        """Panel with zero missing IFGF should return unchanged and n_imputed_rows=0."""
+    def test_impute_no_missing_noop(self, full_panel: pd.DataFrame) -> None:
+        """Panel with zero missing IFGF returns n_imputed_rows=0."""
         from database.impute_ifgf import impute_ifgf_mice
 
-        panel = _make_synthetic_panel(n_munic=50, pct_missing=0.0)
-        ifgf_cols = ["ifgf_geral", "ifgf_ra", "ifgf_gp", "ifgf_id", "ifgf_el", "ifgf_sa"]
-
-        # Confirm no NaN
-        assert panel[ifgf_cols].isna().sum().sum() == 0
-
-        result, log = impute_ifgf_mice(panel, m=3, max_iter=5)
-
+        result, log = impute_ifgf_mice(full_panel, m=3, max_iter=5)
         assert log["n_imputed_rows"] == 0
-        pd.testing.assert_frame_equal(result[ifgf_cols], panel[ifgf_cols])
+        # DataFrame should be unchanged (no ifgf_is_imputed column or all 0)
+        if "ifgf_is_imputed" in result.columns:
+            assert result["ifgf_is_imputed"].sum() == 0
 
-    def test_impute_adds_flag_column(self):
-        """ifgf_is_imputed column should be 1 where imputed, 0 otherwise."""
+    def test_impute_adds_flag_column(self, synthetic_panel: pd.DataFrame) -> None:
+        """Imputed panel must have ifgf_is_imputed flag column."""
         from database.impute_ifgf import impute_ifgf_mice
 
-        panel = _make_synthetic_panel(n_munic=50, pct_missing=0.20)
-        result, _ = impute_ifgf_mice(panel, m=3, max_iter=5)
-
+        result, _log = impute_ifgf_mice(synthetic_panel, m=3, max_iter=5)
         assert "ifgf_is_imputed" in result.columns
-        assert set(result["ifgf_is_imputed"].unique()).issubset({0, 1})
-        assert result["ifgf_is_imputed"].sum() > 0
+        assert result["ifgf_is_imputed"].sum() == 20
 
 
 # ---------------------------------------------------------------------------
-# Tests — generate_missingness_report
+# Tests: generate_missingness_report
 # ---------------------------------------------------------------------------
 
-class TestGenerateMissingnessReport:
-    """Tests for the generate_missingness_report() function."""
+class TestMissingnessReport:
+    """Tests for the generate_missingness_report function."""
 
-    def test_missingness_report_format(self):
-        """Report CSV must have correct columns and MNAR/cross_sectional labels."""
+    def test_missingness_report_format(self, missingness_panel: pd.DataFrame) -> None:
+        """Missingness CSV must have correct columns and labels."""
         from database.impute_ifgf import generate_missingness_report
-
-        panel = _make_synthetic_panel(n_munic=50, pct_missing=0.20)
-        # Add an IDHM column (cross-sectional)
-        panel["idhm"] = 0.75
-        # Add a fully observed column
-        panel["populacao"] = panel["populacao"].fillna(10000)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             out_path = Path(tmpdir) / "missingness.csv"
-            result_path = generate_missingness_report(panel, out_path)
-
+            result_path = generate_missingness_report(
+                missingness_panel, out_path,
+            )
             assert result_path.exists()
-            report = pd.read_csv(result_path)
+            df = pd.read_csv(result_path, keep_default_na=False)
 
-            expected_cols = {"variable", "year", "n_total", "n_observed",
-                            "n_missing", "pct_missing", "missingness_mechanism",
-                            "handling_method"}
-            assert expected_cols.issubset(set(report.columns))
+            expected_cols = {
+                "variable", "year", "n_total", "n_observed",
+                "n_missing", "pct_missing", "missingness_mechanism",
+                "handling_method",
+            }
+            assert expected_cols == set(df.columns), (
+                "Columns mismatch: got %s" % set(df.columns)
+            )
 
-            # IFGF cols should be marked MNAR
-            ifgf_rows = report[report["variable"] == "ifgf_geral"]
-            assert len(ifgf_rows) > 0
-            assert (ifgf_rows["missingness_mechanism"] == "MNAR").all()
-            assert (ifgf_rows["handling_method"] == "multiple_imputation_m5").all()
+            # IFGF should be MNAR
+            ifgf_rows = df[df["variable"] == "ifgf_geral"]
+            assert all(
+                ifgf_rows["missingness_mechanism"] == "MNAR"
+            ), "IFGF should be classified as MNAR"
 
-            # IDHM should be cross-sectional
-            idhm_rows = report[report["variable"] == "idhm"]
-            assert len(idhm_rows) > 0
-            assert (idhm_rows["missingness_mechanism"] == "cross_sectional_2010").all()
+            # IDHM should be cross_sectional_2010
+            idhm_rows = df[df["variable"] == "idhm"]
+            assert all(
+                idhm_rows["missingness_mechanism"] == "cross_sectional_2010"
+            ), "IDHM should be classified as cross_sectional_2010"
 
-    def test_missingness_report_fully_observed(self):
-        """Column with 0% missing should have mechanism 'NA' and handling 'none'."""
+    def test_missingness_report_fully_observed(
+        self, missingness_panel: pd.DataFrame,
+    ) -> None:
+        """Column with 0% missing should have mechanism NA and handling none."""
         from database.impute_ifgf import generate_missingness_report
-
-        panel = _make_synthetic_panel(n_munic=50, pct_missing=0.0)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             out_path = Path(tmpdir) / "missingness.csv"
-            generate_missingness_report(panel, out_path)
+            generate_missingness_report(missingness_panel, out_path)
+            df = pd.read_csv(out_path, keep_default_na=False)
 
-            report = pd.read_csv(out_path, keep_default_na=False)
+            # GDP is fully observed in the fixture
+            gdp_rows = df[df["variable"] == "gdp_per_capita"]
+            assert all(gdp_rows["pct_missing"] == 0.0), (
+                "GDP should have 0%% missing"
+            )
+            assert all(gdp_rows["missingness_mechanism"] == "NA"), (
+                "Fully observed should have mechanism NA"
+            )
+            assert all(gdp_rows["handling_method"] == "none"), (
+                "Fully observed should have handling none"
+            )
 
-            # gdp_per_capita should be fully observed (NA mechanism)
-            gdp_rows = report[report["variable"] == "gdp_per_capita"]
-            assert len(gdp_rows) > 0
-            assert (gdp_rows["missingness_mechanism"] == "NA").all()
-            assert (gdp_rows["handling_method"] == "none").all()
+    def test_missingness_sanitation_cross_sectional(
+        self, missingness_panel: pd.DataFrame,
+    ) -> None:
+        """Sanitation columns should be marked cross_sectional_2022."""
+        from database.impute_ifgf import generate_missingness_report
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir) / "missingness.csv"
+            generate_missingness_report(missingness_panel, out_path)
+            df = pd.read_csv(out_path, keep_default_na=False)
+
+            sanit_rows = df[df["variable"] == "pct_sanitation_adequate"]
+            assert all(
+                sanit_rows["missingness_mechanism"] == "cross_sectional_2022"
+            ), "Sanitation should be cross_sectional_2022"

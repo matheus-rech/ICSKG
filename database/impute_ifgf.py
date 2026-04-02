@@ -1,19 +1,16 @@
 """
 ICSKG-BR IFGF Multiple Imputation Module
 ==========================================
-Fills missing IFGF values (~420 MNAR municipalities per year) using
-multiple imputation with chained equations (MICE) via scikit-learn's
-IterativeImputer with BayesianRidge posterior sampling.
+Handles Missing Not At Random (MNAR) values in IFGF fiscal governance
+indicators via multiple imputation (MICE) with Bayesian Ridge regression.
 
-The IFGF (Indice FIRJAN de Gestao Fiscal) has a systematic missingness
-pattern: approximately 420 small municipalities per year are not scored
-by FIRJAN due to insufficient fiscal data. This is Missing Not At Random
-(MNAR) because the missingness is related to the fiscal governance
-capacity of the municipality itself.
+Approximately 420 Brazilian municipalities per year are systematically missing
+from FIRJAN's IFGF dataset. This module imputes those values using auxiliary
+variables (GDP per capita, population, region) through scikit-learn's
+IterativeImputer with sample_posterior=True and Rubin's rules pooling.
 
-Multiple imputation (m=5) with auxiliary variables (GDP per capita,
-population, region) accounts for imputation uncertainty. Results are
-pooled using Rubin's rules (mean across imputations).
+Also generates a RECORD item 12.1 compliant missingness report documenting
+every variable's missingness rate, mechanism, and handling method per year.
 
 Exports
 -------
@@ -25,7 +22,7 @@ Usage
     from database.impute_ifgf import impute_ifgf_mice, generate_missingness_report
 
     panel, log = impute_ifgf_mice(panel, m=5, max_iter=10)
-    report_path = generate_missingness_report(panel, Path("missingness.csv"))
+    report_path = generate_missingness_report(panel, Path("PANL-06-missingness.csv"))
 """
 
 import logging
@@ -41,7 +38,6 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -52,21 +48,22 @@ IFGF_COLS: list[str] = [
 
 AUX_COLS: list[str] = ["gdp_per_capita", "populacao", "region_code"]
 
-# UF-to-region mapping (N=1, NE=2, CO=3, SE=4, S=5)
+# UF -> region code mapping (IBGE standard macro-regions)
 UF_TO_REGION: dict[str, int] = {
-    # Norte (N)
+    # Norte (N) = 1
     "AC": 1, "AP": 1, "AM": 1, "PA": 1, "RO": 1, "RR": 1, "TO": 1,
-    # Nordeste (NE)
-    "AL": 2, "BA": 2, "CE": 2, "MA": 2, "PB": 2, "PE": 2, "PI": 2, "RN": 2, "SE": 2,
-    # Centro-Oeste (CO)
+    # Nordeste (NE) = 2
+    "AL": 2, "BA": 2, "CE": 2, "MA": 2, "PB": 2, "PE": 2,
+    "PI": 2, "RN": 2, "SE": 2,
+    # Centro-Oeste (CO) = 3
     "DF": 3, "GO": 3, "MT": 3, "MS": 3,
-    # Sudeste (SE)
+    # Sudeste (SE) = 4
     "ES": 4, "MG": 4, "RJ": 4, "SP": 4,
-    # Sul (S)
+    # Sul (S) = 5
     "PR": 5, "RS": 5, "SC": 5,
 }
 
-# Metadata columns excluded from missingness report
+# Metadata columns excluded from missingness analysis
 METADATA_COLS: set[str] = {
     "cod_ibge", "year", "nome_municipio", "uf", "region_code",
     "ifgf_is_imputed",
@@ -74,7 +71,7 @@ METADATA_COLS: set[str] = {
 
 
 # ---------------------------------------------------------------------------
-# Public API — imputation
+# Public API
 # ---------------------------------------------------------------------------
 
 def impute_ifgf_mice(
@@ -82,35 +79,29 @@ def impute_ifgf_mice(
     m: int = 5,
     max_iter: int = 10,
 ) -> tuple[pd.DataFrame, dict]:
-    """Fill missing IFGF values via multiple imputation (MICE).
+    """Multiple imputation for IFGF columns using auxiliary variables.
 
-    Uses scikit-learn IterativeImputer with BayesianRidge and posterior
-    sampling. Runs m imputations and pools via Rubin's rules (mean).
+    Runs *m* imputations with scikit-learn IterativeImputer (BayesianRidge
+    estimator, sample_posterior=True), then pools results via Rubin's rules
+    (mean across imputations). Only IFGF columns where original values were
+    NaN are overwritten; auxiliary columns are never modified.
 
     Parameters
     ----------
     panel : pd.DataFrame
-        Municipality-year panel. Must contain IFGF columns and auxiliary
-        columns (gdp_per_capita, populacao, and either region_code or uf).
+        Must contain IFGF columns and auxiliary columns (or 'uf' for
+        region_code derivation).
     m : int
-        Number of imputations (default 5).
+        Number of imputations (default: 5).
     max_iter : int
-        Maximum iterations per imputation (default 10).
+        Maximum iterations per imputation (default: 10).
 
     Returns
     -------
     tuple[pd.DataFrame, dict]
-        panel : DataFrame with IFGF NaN filled and ifgf_is_imputed flag added.
-        imputation_log : dict with method details and per-year counts.
+        panel : DataFrame with imputed IFGF values and ifgf_is_imputed flag.
+        imputation_log : Dict with method details and per-year breakdown.
     """
-    from sklearn.experimental import enable_iterative_imputer  # noqa: F401, PLC0415
-    from sklearn.impute import IterativeImputer  # noqa: PLC0415
-    from sklearn.linear_model import BayesianRidge  # noqa: PLC0415
-
-    logger.info("─" * 60)
-    logger.info("IFGF MULTIPLE IMPUTATION (m=%d, max_iter=%d)", m, max_iter)
-    logger.info("─" * 60)
-
     panel = panel.copy()
 
     # -----------------------------------------------------------------------
@@ -118,50 +109,59 @@ def impute_ifgf_mice(
     # -----------------------------------------------------------------------
     if "region_code" not in panel.columns:
         if "uf" in panel.columns:
-            panel["region_code"] = panel["uf"].map(UF_TO_REGION)
-            logger.info("Derived region_code from uf column")
+            panel["region_code"] = panel["uf"].map(UF_TO_REGION).astype(float)
+            logger.info(
+                "Derived region_code from uf column (%d mapped)",
+                panel["region_code"].notna().sum(),
+            )
         else:
             logger.warning(
-                "Neither 'region_code' nor 'uf' found in panel. "
-                "Imputation will proceed without region auxiliary variable."
+                "Neither region_code nor uf found in panel -- "
+                "imputation will proceed without region auxiliary"
             )
-            panel["region_code"] = 0
 
     # -----------------------------------------------------------------------
-    # Identify MNAR mask BEFORE imputation
+    # Identify MNAR rows (any IFGF column is NaN)
     # -----------------------------------------------------------------------
-    available_ifgf = [c for c in IFGF_COLS if c in panel.columns]
-    if not available_ifgf:
+    present_ifgf = [c for c in IFGF_COLS if c in panel.columns]
+    if not present_ifgf:
         logger.warning("No IFGF columns found in panel -- returning unchanged")
-        log = _build_log(m, max_iter, 0, panel, available_ifgf)
-        panel["ifgf_is_imputed"] = 0
+        log = _build_log(m, max_iter, 0, present_ifgf, panel)
         return panel, log
 
-    mnar_mask = panel[available_ifgf].isna().any(axis=1)
+    mnar_mask = panel[present_ifgf].isna().any(axis=1)
     n_imputed_rows = int(mnar_mask.sum())
+
+    logger.info(
+        "IFGF MNAR rows: %d / %d (%.1f%%)",
+        n_imputed_rows, len(panel),
+        100 * n_imputed_rows / max(len(panel), 1),
+    )
 
     # -----------------------------------------------------------------------
     # Early return if nothing to impute
     # -----------------------------------------------------------------------
     if n_imputed_rows == 0:
-        logger.info("No missing IFGF values -- skipping imputation")
-        log = _build_log(m, max_iter, 0, panel, available_ifgf)
         panel["ifgf_is_imputed"] = 0
+        log = _build_log(m, max_iter, 0, present_ifgf, panel)
         return panel, log
 
-    logger.info("IFGF MNAR rows to impute: %d / %d total", n_imputed_rows, len(panel))
+    # -----------------------------------------------------------------------
+    # Run m imputations
+    # -----------------------------------------------------------------------
+    from sklearn.experimental import enable_iterative_imputer  # noqa: F401,PLC0415
+    from sklearn.impute import IterativeImputer  # noqa: PLC0415
+    from sklearn.linear_model import BayesianRidge  # noqa: PLC0415
 
-    # -----------------------------------------------------------------------
-    # Build feature matrix
-    # -----------------------------------------------------------------------
-    available_aux = [c for c in AUX_COLS if c in panel.columns]
-    feature_cols = available_ifgf + available_aux
-    X = panel[feature_cols].copy()
+    present_aux = [c for c in AUX_COLS if c in panel.columns]
+    feature_cols = present_ifgf + present_aux
 
-    # -----------------------------------------------------------------------
-    # Run m imputations with different random seeds
-    # -----------------------------------------------------------------------
-    imputed_frames: list[pd.DataFrame] = []
+    # Preserve original aux values
+    aux_backup = {c: panel[c].copy() for c in present_aux}
+
+    X = panel[feature_cols].values.copy()
+
+    imputed_arrays = []
     for i in range(m):
         imputer = IterativeImputer(
             estimator=BayesianRidge(),
@@ -170,43 +170,40 @@ def impute_ifgf_mice(
             random_state=i * 42,
             verbose=0,
         )
-        imputed_arr = imputer.fit_transform(X)
-        imputed_df = pd.DataFrame(
-            imputed_arr, columns=feature_cols, index=panel.index,
-        )
-        imputed_frames.append(imputed_df)
+        X_imp = imputer.fit_transform(X)
+        imputed_arrays.append(X_imp)
+        logger.info("  Imputation %d/%d complete", i + 1, m)
 
     # -----------------------------------------------------------------------
-    # Pool via Rubin's rules: mean across m imputations for IFGF cols only
+    # Pool via Rubin's rules (mean across m imputations for IFGF cols only)
     # -----------------------------------------------------------------------
-    stacked = pd.concat(imputed_frames)
-    pooled = stacked.groupby(level=0).mean()
+    stacked = np.stack(imputed_arrays, axis=0)  # shape: (m, n_rows, n_features)
+    pooled = stacked.mean(axis=0)  # shape: (n_rows, n_features)
 
-    # Only overwrite IFGF values where original was NaN
-    for col in available_ifgf:
-        panel.loc[mnar_mask, col] = pooled.loc[mnar_mask, col]
+    # Only overwrite IFGF columns where original was NaN
+    for j, col in enumerate(present_ifgf):
+        original = panel[col].values.copy()
+        imputed_vals = pooled[:, j]
+        panel[col] = np.where(np.isnan(original), imputed_vals, original)
 
-    # -----------------------------------------------------------------------
+    # Restore auxiliary columns (imputer may have modified them)
+    for c, backup in aux_backup.items():
+        panel[c] = backup
+
     # Add imputation flag
-    # -----------------------------------------------------------------------
-    panel["ifgf_is_imputed"] = mnar_mask.astype(int)
+    panel["ifgf_is_imputed"] = mnar_mask.astype(int).values
 
     # -----------------------------------------------------------------------
-    # Build imputation log
+    # Build log
     # -----------------------------------------------------------------------
-    log = _build_log(m, max_iter, n_imputed_rows, panel, available_ifgf)
+    log = _build_log(m, max_iter, n_imputed_rows, present_ifgf, panel)
 
     logger.info(
-        "Imputation complete: %d rows imputed across %d years",
-        n_imputed_rows, len(log.get("per_year", {})),
+        "IFGF imputation complete: %d rows imputed via m=%d imputations",
+        n_imputed_rows, m,
     )
-
     return panel, log
 
-
-# ---------------------------------------------------------------------------
-# Public API — missingness report
-# ---------------------------------------------------------------------------
 
 def generate_missingness_report(
     panel: pd.DataFrame,
@@ -214,20 +211,20 @@ def generate_missingness_report(
 ) -> Path:
     """Generate a RECORD 12.1 compliant missingness report.
 
-    For each value column in the panel, documents the missingness rate
-    per year with the mechanism classification and handling method.
+    For each value column in the panel, documents per-year missingness rate,
+    mechanism classification, and handling method.
 
     Parameters
     ----------
     panel : pd.DataFrame
-        Municipality-year panel (pre- or post-imputation).
+        The assembled panel (pre- or post-imputation).
     output_path : Path or str
-        Path for the output CSV.
+        Where to write the CSV report.
 
     Returns
     -------
     Path
-        Path to the written CSV file.
+        The output path (confirmed written).
     """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -240,11 +237,11 @@ def generate_missingness_report(
     rows: list[dict] = []
     for col in value_cols:
         for year in years:
-            year_data = panel[panel["year"] == year][col]
+            year_data = panel.loc[panel["year"] == year, col]
             n_total = len(year_data)
-            n_observed = int(year_data.notna().sum())
-            n_missing = n_total - n_observed
-            pct_missing = round(n_missing / n_total * 100, 2) if n_total > 0 else 0.0
+            n_missing = int(year_data.isna().sum())
+            n_observed = n_total - n_missing
+            pct_missing = round(100 * n_missing / max(n_total, 1), 2)
 
             mechanism = _classify_mechanism(col, pct_missing)
             handling = _classify_handling(mechanism)
@@ -265,36 +262,36 @@ def generate_missingness_report(
     report.to_csv(output_path, index=False)
 
     logger.info(
-        "Missingness report written: %d rows covering %d variables x %d years -> %s",
-        len(report), len(value_cols), len(years), output_path,
+        "Missingness report written: %d entries -> %s",
+        len(report), output_path,
     )
-
     return output_path
 
 
 # ---------------------------------------------------------------------------
-# Private helpers
+# Internal helpers
 # ---------------------------------------------------------------------------
 
 def _build_log(
     m: int,
     max_iter: int,
     n_imputed_rows: int,
-    panel: pd.DataFrame,
     ifgf_cols: list[str],
+    panel: pd.DataFrame,
 ) -> dict:
     """Build the imputation log dict."""
+    present_aux = [c for c in AUX_COLS if c in panel.columns]
+
+    # Per-year breakdown
     per_year: dict[int, int] = {}
-    if n_imputed_rows > 0 and "ifgf_is_imputed" in panel.columns:
+    if "ifgf_is_imputed" in panel.columns and n_imputed_rows > 0:
         for year in sorted(panel["year"].unique()):
             year_mask = panel["year"] == year
-            per_year[int(year)] = int(panel.loc[year_mask, "ifgf_is_imputed"].sum())
-    elif n_imputed_rows > 0:
-        # Fallback: count from IFGF NaN mask before imputation
+            n_yr = int(panel.loc[year_mask, "ifgf_is_imputed"].sum())
+            per_year[int(year)] = n_yr
+    elif n_imputed_rows == 0:
         for year in sorted(panel["year"].unique()):
             per_year[int(year)] = 0
-
-    available_aux = [c for c in AUX_COLS if c in panel.columns]
 
     return {
         "m": m,
@@ -302,53 +299,54 @@ def _build_log(
         "method": "IterativeImputer(BayesianRidge, sample_posterior=True)",
         "n_imputed_rows": n_imputed_rows,
         "ifgf_cols": ifgf_cols,
-        "aux_cols": available_aux,
+        "aux_cols": present_aux,
         "per_year": per_year,
     }
 
 
 def _classify_mechanism(col: str, pct_missing: float) -> str:
-    """Classify missingness mechanism for a variable.
+    """Classify missingness mechanism based on column name and rate.
 
     Parameters
     ----------
     col : str
         Column name.
     pct_missing : float
-        Percentage of missing values (0-100).
+        Percentage of missing values.
 
     Returns
     -------
     str
-        Missingness mechanism classification.
+        One of: MNAR, cross_sectional_2010, cross_sectional_2022,
+        source_unavailable, MAR, NA.
     """
-    # IFGF columns: MNAR (systematically missing small municipalities)
+    # IFGF columns are MNAR (municipalities not assessed by FIRJAN)
     if col.startswith("ifgf_"):
         return "MNAR"
 
-    # IDHM: cross-sectional from 2010 census
+    # IDHM is cross-sectional (2010 census)
     if col.startswith("idhm"):
         return "cross_sectional_2010"
 
-    # Census sanitation: cross-sectional from 2022
+    # Sanitation / water from Census 2022
     if col.startswith("pct_sanitation") or col.startswith("pct_water"):
         return "cross_sectional_2022"
 
-    # Health expenditure: source_unavailable if 100% missing, else MAR
-    if col.startswith("health_expenditure"):
-        if pct_missing >= 100.0:
+    # Source unavailable if 100% missing
+    if pct_missing >= 100.0:
+        if col.startswith("health_expenditure") or col.startswith("vehicles"):
             return "source_unavailable"
-        return "MAR" if pct_missing > 0 else "NA"
 
-    # Vehicles: source_unavailable if 100% missing, else MAR
-    if col.startswith("vehicles"):
-        if pct_missing >= 100.0:
-            return "source_unavailable"
-        return "MAR" if pct_missing > 0 else "NA"
+    # Health expenditure or vehicles with partial data
+    if col.startswith("health_expenditure") or col.startswith("vehicles"):
+        if pct_missing > 0:
+            return "MAR"
 
-    # Default: NA if fully observed, MAR otherwise
-    if pct_missing == 0:
+    # Fully observed
+    if pct_missing == 0.0:
         return "NA"
+
+    # Default for partially missing
     return "MAR"
 
 
@@ -358,19 +356,19 @@ def _classify_handling(mechanism: str) -> str:
     Parameters
     ----------
     mechanism : str
-        Missingness mechanism from _classify_mechanism().
+        The classified missingness mechanism.
 
     Returns
     -------
     str
-        Handling method applied.
+        Handling method string.
     """
     handling_map = {
         "MNAR": "multiple_imputation_m5",
         "cross_sectional_2010": "constant_fill",
         "cross_sectional_2022": "constant_fill",
         "source_unavailable": "documented_gap",
-        "NA": "none",
         "MAR": "left_as_nan",
+        "NA": "none",
     }
     return handling_map.get(mechanism, "left_as_nan")
