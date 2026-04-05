@@ -59,7 +59,7 @@ jobs:
       - name: Run tests
         if: ${{ inputs.run_tests }}
         run: |
-          python -m pytest tests/ -v --tb=short -q
+          python -m pytest tests/ -v --tb=short
 
       - name: Build database (v3)
         if: ${{ inputs.builder_version == 'v3' }}
@@ -86,4 +86,4 @@ jobs:
             database/icskg_br.duckdb
             database/database_metadata.json
           retention-days: 30
-          if-no-files-found: warn
+          if-no-files-found: error
