@@ -63,10 +63,13 @@ def test_download_competence_returns_none_on_runtimeerror(monkeypatch, tmp_path)
     """download_competence returns None when HTTP helper fails."""
     from scripts import download_ans
 
+    def _raise_runtime_error(*_args, **_kwargs):
+        raise RuntimeError("boom")
+
     monkeypatch.setattr(
         download_ans,
         "_get_with_retry",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("boom")),
+        _raise_runtime_error,
     )
     got = download_ans.download_competence(2023, 12, raw_dir=tmp_path)
     assert got is None
@@ -111,10 +114,13 @@ def test_merge_downloads_returns_zero_when_all_parses_fail(monkeypatch, tmp_path
 
     p1 = tmp_path / "202303_Beneficiarios_por_municipio.csv"
     p1.write_text("x", encoding="latin-1")
+    def _raise_value_error(*_args, **_kwargs):
+        raise ValueError("bad")
+
     monkeypatch.setattr(
         download_ans,
         "parse_csv",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(ValueError("bad")),
+        _raise_value_error,
     )
     n = download_ans.merge_downloads([p1], tmp_path / "out.parquet")
     assert n == 0
@@ -171,11 +177,14 @@ def test_download_latest_returns_false_on_conversion_error(monkeypatch, tmp_path
     csv_path = tmp_path / "202512_Beneficiarios_por_municipio.csv"
     csv_path.write_text("CD_MUNICIPIO;BENEFICIARIOS\n355030;10\n", encoding="latin-1")
 
+    def _raise_parse_error(*_args, **_kwargs):
+        raise ValueError("parse failed")
+
     monkeypatch.setattr(download_ans, "download_competence", lambda *_args, **_kwargs: csv_path)
     monkeypatch.setattr(
         download_ans,
         "parse_csv",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(ValueError("parse failed")),
+        _raise_parse_error,
     )
 
     ok = download_ans.download_latest(tmp_path / "latest.parquet", raw_dir=tmp_path / "raw")

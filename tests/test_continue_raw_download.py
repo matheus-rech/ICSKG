@@ -40,10 +40,13 @@ def test_download_month_returns_false_on_connect_failure(monkeypatch, tmp_path):
     """download_month returns False when FTP connection fails."""
     from scripts import continue_raw_download
 
+    def _raise_no_ftp(*_args, **_kwargs):
+        raise RuntimeError("no ftp")
+
     monkeypatch.setattr(
         continue_raw_download,
         "_connect_ftp",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("no ftp")),
+        _raise_no_ftp,
     )
 
     ok = continue_raw_download.download_month("SIH", 2023, 1, tmp_path / "out.parquet")
@@ -190,4 +193,3 @@ def test_main_respects_existing_output_when_resume_true(monkeypatch, tmp_path):
     )
     assert rc == 0
     assert called["download"] == 0
-
