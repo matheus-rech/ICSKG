@@ -104,8 +104,8 @@ def test_download_month_merge_branch_success(monkeypatch, tmp_path):
     assert len(merged) == 2
 
 
-def test_download_month_returns_true_when_downloaded_without_convert(monkeypatch, tmp_path):
-    """download_month returns bool(downloaded_parquets)==False unless convert creates outputs."""
+def test_download_month_returns_false_when_convert_disabled_and_no_outputs(monkeypatch, tmp_path):
+    """download_month returns False when conversion is disabled and no parquet outputs exist."""
     from scripts import continue_raw_download
 
     class _FTP:

@@ -126,7 +126,7 @@ def test_merge_downloads_returns_zero_when_all_parses_fail(monkeypatch, tmp_path
     assert n == 0
 
 
-def test_download_latest_fallback_then_success(monkeypatch, tmp_path):
+def test_download_latest_retries_previous_quarters_until_success(monkeypatch, tmp_path):
     """download_latest searches backwards by quarter and writes parquet on success."""
     from scripts import download_ans
 
@@ -170,8 +170,8 @@ def test_download_latest_fallback_then_success(monkeypatch, tmp_path):
     assert attempts[:2] == [(2025, 12), (2025, 9)]
 
 
-def test_download_latest_returns_false_on_conversion_error(monkeypatch, tmp_path):
-    """download_latest returns False when parse/convert fails."""
+def test_download_latest_returns_false_on_parse_error(monkeypatch, tmp_path):
+    """download_latest returns False when CSV parsing fails."""
     from scripts import download_ans
 
     csv_path = tmp_path / "202512_Beneficiarios_por_municipio.csv"
