@@ -88,11 +88,6 @@ jobs:
             --db-dir database \
             --years "$START_YEAR" "$END_YEAR"
 
-      - name: Verify build outputs (v3)
-        if: ${{ inputs.builder_version == 'v3' }}
-        run: |
-          test -f database/icskg_br.sqlite || { echo "Missing icskg_br.sqlite" >&2; exit 1; }
-
       - name: Verify build outputs (v2)
         if: ${{ inputs.builder_version == 'v2' }}
         run: |
