@@ -95,6 +95,11 @@ jobs:
           test -f database/icskg_br.duckdb || { echo "Missing icskg_br.duckdb" >&2; exit 1; }
           test -f database/database_metadata.json || { echo "Missing database_metadata.json" >&2; exit 1; }
 
+      - name: Verify build outputs (v3)
+        if: ${{ inputs.builder_version == 'v3' }}
+        run: |
+          test -f database/icskg_br.sqlite || { echo "Missing icskg_br.sqlite (v3 build)" >&2; exit 1; }
+
       - name: Upload database artifact (v3)
         if: ${{ inputs.builder_version == 'v3' }}
         uses: actions/upload-artifact@v4
