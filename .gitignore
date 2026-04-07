@@ -20,3 +20,7 @@ database/icskg_br.duckdb
 
 # OS
 .DS_Store
+
+# oh-my-claudecode runtime state (runtime artifacts, not config)
+.omc/state/
+.omc/project-memory.json
