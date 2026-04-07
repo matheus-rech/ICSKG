@@ -102,6 +102,7 @@ PLACEHOLDER_MARKERS: tuple[str, ...] = (
     "to-be-filled",
     "to be filled",
     "TODO",
+    "placeholder_",
 )
 
 # Generic [Bracketed Placeholder] regex — catches any string that looks like
