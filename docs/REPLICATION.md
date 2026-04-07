@@ -187,8 +187,8 @@ If you have `sqlite3` installed, you can also browse:
 sqlite3 database/icskg_br.sqlite ".tables"
 # Lists the tables: municipal_health, dimension_scores, lcogs_indicators, ...
 
-sqlite3 database/icskg_br.sqlite "SELECT cod_ibge, year, cuds FROM municipal_health WHERE cod_ibge='3550308' ORDER BY year"
-# São Paulo CUDS by year
+sqlite3 database/icskg_br.sqlite "SELECT cod_ibge, year, ifgf_geral, idhm FROM municipal_health WHERE cod_ibge='3550308' ORDER BY year"
+# São Paulo fiscal management + HDI by year
 ```
 
 ---
