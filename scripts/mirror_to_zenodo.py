@@ -416,6 +416,12 @@ def upload_files(
                 )
             resp.raise_for_status()
         else:
+            if not files_url:
+                raise RuntimeError(
+                    "Deposition %d has neither links.bucket nor links.files — "
+                    "cannot upload. Is the Zenodo token valid and the deposition in draft state?"
+                    % deposition.get("id", "?")
+                )
             with path.open("rb") as fh:
                 resp = requests.post(
                     files_url,
