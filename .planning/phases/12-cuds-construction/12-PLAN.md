@@ -120,10 +120,113 @@ This phase produces no new analysis layer and no new visualisations — it close
 <refs>
 ## References
 
+### Internal
 - ICSKG-BR Technical Cookbook v1.0 (March 2026): `~/Pictures/universal_systematic_review_repository/ICSKG.pdf`
 - Phase 11 plans: `.planning/phases/11-ci-reproducibility-hf-data-layer/`
 - Phase 11 PR: https://github.com/matheus-rech/ICSKG/pull/8
 - v0.1.0 HF dataset: https://huggingface.co/datasets/mmrech/icskg-br-processed/tree/v0.1.0
 - Publish-time `municipal_health` derivation (to be moved): `scripts/publish_to_hf.py::derive_municipal_health_panel`
 - Cookbook scope statement (current state): `scripts/publish_to_hf.py::COOKBOOK_SOURCES_PRESENT` and `COOKBOOK_SOURCES_DEFERRED`
+- Existing skeleton extractors (v0.1 SKELETONS, raise NotImplementedError):
+  - `scripts/extract_anatel_broadband.py` — cookbook §3.6
+  - `scripts/extract_rais_employment.py` — cookbook §3.7
+  - `scripts/extract_snis_sanitation.py` — cookbook §3.8 (proper, not Census proxy)
+  - `scripts/extract_international_comparators.py` — cookbook §3.11
+- Pre-existing best-effort extractor (working but endpoints stale):
+  - `scripts/extract_siops.py` — cookbook §3.10. Tries SIOPS REST API +
+    DATASUS TabNet + OpenDataSUS in that order; ALL six endpoint URLs
+    return 404 as of 2026-04-07.  Needs rewrite against gov.br Conecta
+    catalog (see external resources below).
+- Empty placeholder (do NOT trust as-is):
+  - `data_sources/processed/siops/siops.parquet` — written by best-effort
+    extractor when all endpoints fail.  Schema-only, zero rows.
+- Pre-existing extractors flagged "your own risk":
+  - `scripts/extract_ibge_sidra.py` — works but unreliable, depends on
+    sidrapy + flaky SIDRA endpoints; treat outputs as needing re-validation
+- Bucket for raw FIOCRUZ-style downloads: `hf://buckets/mmrech/sihsus`
+  (created 2026-04-07, currently empty)
+
+### External resources for Phase 12 implementation work
+
+**Brazilian government API gateways** (PRIMARY discovery surface):
+
+- **gov.br Conecta catalog** — https://www.gov.br/conecta/catalogo/
+  Official Brazilian federal API catalog.  THIS is where the canonical
+  SIOPS / IBGE / DATASUS / ANATEL / etc. endpoint URLs live.  Start every
+  Phase 12 extractor here to find the current authoritative endpoint
+  before writing code.  Replaces the pattern of guessing API paths.
+
+- **BrasilAPI** — https://brasilapi.com.br/docs
+  Community-maintained Brazilian government API aggregator.  Provides
+  clean wrappers around CEP, banks, IBGE municipalities, holidays,
+  feriados, banks, vehicles registry, weather, taxes, NCM codes, etc.
+  Useful for cross-validating IBGE municipality codes and as a fallback
+  when Conecta endpoints are down.
+
+**IBGE SIDRA (cookbook §3.3)**:
+
+- **sidrapy** (Python) — https://sidrapy.readthedocs.io/pt-br/latest/
+  Already in our dependency tree (`sidrapy>=0.1.4`).  Used by the
+  flaky `scripts/extract_ibge_sidra.py`.  When rewriting, keep sidrapy
+  as the API client and add retry/circuit-breaker around it.
+
+- **sidrar** (R) — https://cran.r-project.org/web/packages/sidrar/sidrar.pdf
+  R-equivalent of sidrapy.  Useful for cross-validation of column names,
+  table IDs, and aggregation semantics.  NOT a replacement — keep Python
+  as the canonical pipeline language.
+
+**DATASUS pre-ETL'd archives (cookbook §3.1, §3.2)**:
+
+- **FIOCRUZ ICICT** — https://bigdata-arquivos.icict.fiocruz.br/PUBLICO/
+  Pre-extracted DATASUS data published as plain CSV in versioned ZIPs.
+  Skips the entire DBC→CSV conversion step (and therefore the entire
+  pysus → elasticsearch → urllib3<2 chain that triggers Dependabot).
+  Subdirectories: `SIH/`, `CNES/`, `SIM/`, `SINASC/`, `SIM_DOFET/`,
+  `SIMU/`, `OUVIDORIA/`, `PMM/`, `POP_SVS/`, `PolisPCDaS/`.
+  ETLSIH.zip is **31 GB** as of 2026-04-07 — Phase 12 must use either
+  HF Jobs (paid compute, cleanest) or NAS-staged download via
+  `/Volumes/home/` + `hf sync hf://buckets/mmrech/sihsus`.
+  See `scripts/jobs/explore_fiocruz_sih.py` for the prepared explorer
+  script (currently un-runnable until HF Jobs credits land).
+
+- **microdatasus** (R) — https://github.com/rfsaldanha/microdatasus
+  Active R package (v2.3.1, June 2024) using `read.dbc`.  Alternative
+  if FIOCRUZ ICICT doesn't pan out — would require an R subprocess
+  in the build pipeline (containerizable) but eliminates pysus entirely.
+
+**Atlas Brasil HDI (cookbook §3.4)**:
+
+- IPEA Data — current `scripts/extract_ipea_idhm.py` (10 KB) is the
+  existing implementation.  Verify it still works against the IPEA
+  IDHM endpoint as part of phase 12 health checks.
+
+**FIRJAN IFGF (cookbook §3.5)**:
+
+- FIRJAN open data portal — current `scripts/extract_ifgf.py` (11 KB)
+  is the existing implementation.  Reads from a bundled XLSX
+  (`data_sources/Evolucao_por_Indicador_2013_a_2024_IFGF_2025.xlsx`)
+  per CLAUDE.md.  Phase 12 should switch to fetching from the FIRJAN
+  open data API if one exists (TBD via Conecta search).
+
+**RAIS (cookbook §3.7)** — no official API; sources to check:
+
+- Ministério do Trabalho microdata FTP: ftp://ftp.mtps.gov.br/pdet/microdados/RAIS/
+- Aggregated bulletins (PDF/CSV) on the MTE website
+- Possibly available via Base dos Dados (https://basedosdados.org/)
+
+**ANATEL (cookbook §3.6)** — search Conecta for "ANATEL" or:
+
+- ANATEL open data portal: https://informacoes.anatel.gov.br/paineis/acessos/banda-larga-fixa
+- Densidade de Banda Larga Fixa monthly CSVs
+
+**SNIS (cookbook §3.8)** — search Conecta for "SNIS" or:
+
+- SNIS Diagnóstico annual reports: http://www.snis.gov.br/diagnosticos
+- Per-year ZIPs containing operational and accounting indicators
+
+**International comparators (cookbook §3.11)**:
+
+- WHO Global Health Observatory: https://ghoapi.azureedge.net/api/
+- World Bank Open Data: https://api.worldbank.org/v2/
+- UNDP HDI: http://hdr.undp.org/en/data
 </refs>
