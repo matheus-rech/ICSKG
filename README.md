@@ -11,7 +11,7 @@ across all 5 570 Brazilian municipalities for the period 2013–2024.
 
 ICSKG-BR is a fully reproducible study. Anyone with Python 3.12, git, and a HuggingFace read token can rebuild the published database from a fresh clone in **under 15 minutes** with no NAS access and no special infrastructure.
 
-**Canonical processed data:** [`matheus-rech/icskg-br-processed`](https://huggingface.co/datasets/matheus-rech/icskg-br-processed) on HuggingFace Datasets, version-pinned per release.
+**Canonical processed data:** [`mmrech/icskg-br-processed`](https://huggingface.co/datasets/mmrech/icskg-br-processed) on HuggingFace Datasets, version-pinned per release.
 
 | Item | Value |
 |---|---|

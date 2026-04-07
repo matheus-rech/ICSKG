@@ -189,11 +189,11 @@ A successful run looks like this:
 
 ```text
 2026-04-07 10:23:14 [INFO] database.fetch_processed_data: ──────────────────────────────────────
-2026-04-07 10:23:14 [INFO] database.fetch_processed_data: Fetching matheus-rech/icskg-br-processed @ v0.1.0 -> /home/user/.cache/icskg/hf-snapshots/v0.1.0
+2026-04-07 10:23:14 [INFO] database.fetch_processed_data: Fetching mmrech/icskg-br-processed @ v0.1.0 -> /home/user/.cache/icskg/hf-snapshots/v0.1.0
 2026-04-07 10:23:14 [INFO] database.fetch_processed_data: ──────────────────────────────────────
 Fetching 12 files: 100%|██████████| 12/12 [02:31<00:00, 12.6s/it]
 2026-04-07 10:25:46 [INFO] database.fetch_processed_data: Snapshot materialized at /home/user/.cache/icskg/hf-snapshots/v0.1.0
-2026-04-07 10:25:46 [INFO] database.fetch_processed_data: Verifying 12 tables from manifest matheus-rech/icskg-br-processed @ v0.1.0
+2026-04-07 10:25:46 [INFO] database.fetch_processed_data: Verifying 12 tables from manifest mmrech/icskg-br-processed @ v0.1.0
 2026-04-07 10:25:46 [INFO] database.fetch_processed_data:   ✓ panel/municipal_health.parquet                   50130 rows, sha256 a1b2c3d4e5f6
 2026-04-07 10:25:46 [INFO] database.fetch_processed_data:   ✓ panel/municipality_lookup.parquet                5571 rows, sha256 ...
 [... more entries ...]
@@ -234,7 +234,7 @@ You ran `python -m database.build_database_v3` (the local build) without populat
 
 ### `EntryNotFoundError` from huggingface_hub
 
-You passed a `--revision` that doesn't exist on the dataset repo. Valid revisions are listed at https://huggingface.co/datasets/matheus-rech/icskg-br-processed/tags. The current canonical revision is `v0.1.0`.
+You passed a `--revision` that doesn't exist on the dataset repo. Valid revisions are listed at https://huggingface.co/datasets/mmrech/icskg-br-processed/tags. The current canonical revision is `v0.1.0`.
 
 ### `ImportError: huggingface_hub`
 
@@ -289,8 +289,8 @@ https://github.com/matheus-rech/ICSKG/releases/tag/v1.0.0
 
 **HuggingFace Dataset (interim canonical store):**
 ```
-matheus-rech/icskg-br-processed (HuggingFace Datasets, revision v0.1.0).
-https://huggingface.co/datasets/matheus-rech/icskg-br-processed
+mmrech/icskg-br-processed (HuggingFace Datasets, revision v0.1.0).
+https://huggingface.co/datasets/mmrech/icskg-br-processed
 ```
 
 The Zenodo DOI will be minted at BMJ acceptance via `scripts/mirror_to_zenodo.py` (Phase 11.5). Until then, cite the HuggingFace Dataset revision directly.

@@ -23,6 +23,6 @@ output_dir: "analysis/results"
 # The HF_TOKEN env var is read at runtime (huggingface-cli login OR
 # `export HF_TOKEN=...`). For private datasets, a read-scoped token suffices.
 huggingface:
-  dataset_repo: "matheus-rech/icskg-br-processed"
+  dataset_repo: "mmrech/icskg-br-processed"
   dataset_revision: "v0.1.0"
   token_env_var: "HF_TOKEN"

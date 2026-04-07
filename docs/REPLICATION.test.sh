@@ -17,7 +17,7 @@
 # Requirements:
 #     - python 3.12 (or uv)
 #     - git
-#     - HF_TOKEN env var with read access to matheus-rech/icskg-br-processed
+#     - HF_TOKEN env var with read access to mmrech/icskg-br-processed
 # ============================================================================
 
 set -euo pipefail

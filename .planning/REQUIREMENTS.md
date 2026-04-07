@@ -101,7 +101,7 @@
 
 ### Reproducibility & CI (milestone v1.1)
 
-- [ ] **REPL-01**: Canonical processed data published as a versioned HuggingFace Dataset (`matheus-rech/icskg-br-processed`), parquet tree shape (panel/, dimensions/, lcogs/, source_tables/), with per-file SHA256 + row counts in a manifest.json. Private until BMJ acceptance, then CC-BY-4.0 public.
+- [ ] **REPL-01**: Canonical processed data published as a versioned HuggingFace Dataset (`mmrech/icskg-br-processed`), parquet tree shape (panel/, dimensions/, lcogs/, source_tables/), with per-file SHA256 + row counts in a manifest.json. Private until BMJ acceptance, then CC-BY-4.0 public.
 - [ ] **REPL-02**: `database/build_database_v3.py::main()` raises `RuntimeError("Refusing to build a phantom database")` on empty/metadata-only panels, AND `database/impute_ifgf.py::generate_missingness_report()` raises `ValueError` plus pins its DataFrame schema as defense-in-depth. The original cryptic `KeyError: 'variable'` failure mode is unreachable.
 - [ ] **REPL-03**: GitHub Actions Build Database workflow succeeds on a github-hosted runner with no NAS access, fetching from HF via `--from-hf` and `secrets.HF_TOKEN`. All Node 20 actions bumped to Node 24-compatible versions (`actions/checkout@v5`, `actions/upload-artifact@v5`). New `Build Database (smoke)` workflow runs on every push and PR using committed `tests/fixtures/processed_smoke/` in <5 min.
 - [ ] **REPL-04**: Fresh-clone replication walkthrough (`docs/REPLICATION.md`) validated end-to-end via runnable self-test (`docs/REPLICATION.test.sh`). A BMJ peer reviewer can rebuild the database in <15 min with only Python 3.12, git, and an HF read token.

@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-Decouple ICSKG-BR from the local NAS so the build is reproducible on any machine — including GitHub-hosted runners and BMJ Global Health peer reviewers' laptops. The canonical processed data layer moves from `/Volumes/home/DataLake/30_models/icskg_br/*.duckdb` (NAS-only, ~516 MB) to a versioned HuggingFace Dataset (`matheus-rech/icskg-br-processed`) stored as a parquet tree. CI fetches from HF, the v3 builder gains a `--from-hf` flag, fail-loud guards prevent any future "phantom database" CI runs, and replication is documented end-to-end. The NAS keeps its role as the *raw* DATASUS archive (100+ GB DBC files) and the place where you re-extract before publishing a new HF revision — but it is **never** in the CI critical path.
+Decouple ICSKG-BR from the local NAS so the build is reproducible on any machine — including GitHub-hosted runners and BMJ Global Health peer reviewers' laptops. The canonical processed data layer moves from `/Volumes/home/DataLake/30_models/icskg_br/*.duckdb` (NAS-only, ~516 MB) to a versioned HuggingFace Dataset (`mmrech/icskg-br-processed`) stored as a parquet tree. CI fetches from HF, the v3 builder gains a `--from-hf` flag, fail-loud guards prevent any future "phantom database" CI runs, and replication is documented end-to-end. The NAS keeps its role as the *raw* DATASUS archive (100+ GB DBC files) and the place where you re-extract before publishing a new HF revision — but it is **never** in the CI critical path.
 
 This phase produces no new analysis or new dimensions. It is an infrastructure refactor of the data plumbing layer, with verification anchored on a green Build Database workflow run on `meta` and a `python -m database.build_database_v3 --from-hf v0.1.0` round-trip on a clean clone.
 
@@ -17,7 +17,7 @@ This phase produces no new analysis or new dimensions. It is an infrastructure r
 ## Implementation Decisions
 
 ### Storage layer
-- **Canonical store:** HuggingFace Dataset `matheus-rech/icskg-br-processed`, **private** until BMJ submission, then flipped public.
+- **Canonical store:** HuggingFace Dataset `mmrech/icskg-br-processed`, **private** until BMJ submission, then flipped public.
 - **Shape:** Parquet tree (Shape B), one parquet file per logical table, organized by namespace (`panel/`, `dimensions/`, `lcogs/`, `source_tables/`). Reasons: HF Dataset Viewer renders parquet natively (huge for peer review), reviewers can pull a single table without downloading the whole 511 MB blob, much better Zenodo experience, and parquet compresses better than DuckDB internal storage on cold data.
 - **Compression:** `zstd` level 6 (best size/speed tradeoff for medium-sized analytical tables).
 - **Versioning:** Semantic, starting at `v0.1.0` and reserving `v1.0.0` for the BMJ submission cut. Each revision is a git tag on the HF dataset repo and pinned by SHA in `config.yaml`.
@@ -50,7 +50,7 @@ This phase produces no new analysis or new dimensions. It is an infrastructure r
 - Exact parquet file naming under each namespace
 - Whether to ship a `manifest.json` alongside the parquet tree (recommended yes — row counts, SHA256, schema version, source DuckDB SHA256)
 - Whether `database/fetch_processed_data.py` materializes to disk vs. opens parquet directly via `duckdb.read_parquet("hf://...")` — both work; disk materialization is more debuggable
-- Test fixture strategy: build a tiny synthetic HF dataset (`matheus-rech/icskg-br-processed-test`) for CI verification, OR use repo-bundled mini parquet under `tests/fixtures/processed_smoke/`. Prefer the bundled fixture since it eliminates a network dependency on every test run.
+- Test fixture strategy: build a tiny synthetic HF dataset (`mmrech/icskg-br-processed-test`) for CI verification, OR use repo-bundled mini parquet under `tests/fixtures/processed_smoke/`. Prefer the bundled fixture since it eliminates a network dependency on every test run.
 
 </decisions>
 

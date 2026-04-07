@@ -30,7 +30,7 @@ on:
       hf_repo_id:
         description: "HuggingFace dataset repo id"
         required: false
-        default: "matheus-rech/icskg-br-processed"
+        default: "mmrech/icskg-br-processed"
         type: string
       expected_rows:
         description: "Expected row count for panel/municipal_health.parquet"

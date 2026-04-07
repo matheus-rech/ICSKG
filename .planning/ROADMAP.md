@@ -211,11 +211,11 @@ Plans:
 - [ ] 10-02-PLAN.md -- STROBE/RECORD checklists, data dictionary, and Zenodo release preparation
 
 ### Phase 11: CI Reproducibility & HF Data Layer (milestone v1.1)
-**Goal**: ICSKG-BR builds reproducibly on any github-hosted runner or fresh clone with no NAS access. Canonical processed data lives on a versioned HuggingFace Dataset (`matheus-rech/icskg-br-processed`) and CI fetches it via a `--from-hf` flag. Fail-loud guards prevent any future "phantom database" CI run. End-to-end replication is documented and self-tested. The Build Database workflow has its first-ever successful run in project history.
+**Goal**: ICSKG-BR builds reproducibly on any github-hosted runner or fresh clone with no NAS access. Canonical processed data lives on a versioned HuggingFace Dataset (`mmrech/icskg-br-processed`) and CI fetches it via a `--from-hf` flag. Fail-loud guards prevent any future "phantom database" CI run. End-to-end replication is documented and self-tested. The Build Database workflow has its first-ever successful run in project history.
 **Depends on**: Phase 10 (no algorithmic dependency, only that the data layer is stable)
 **Requirements**: REPL-01, REPL-02, REPL-03, REPL-04, REPL-05
 **Success Criteria** (what must be TRUE):
-  1. `matheus-rech/icskg-br-processed` exists on HuggingFace as a private dataset, tagged `v0.1.0`, with a parquet tree (panel/, dimensions/, lcogs/, source_tables/) and a manifest.json containing per-file SHA256 + row counts
+  1. `mmrech/icskg-br-processed` exists on HuggingFace as a private dataset, tagged `v0.1.0`, with a parquet tree (panel/, dimensions/, lcogs/, source_tables/) and a manifest.json containing per-file SHA256 + row counts
   2. `python -m database.build_database_v3 --from-hf v0.1.0` succeeds end-to-end on a fresh clone with no NAS access — tested via `docs/REPLICATION.test.sh`
   3. `python -m database.build_database_v3 --processed-dir /any/empty/dir` raises `RuntimeError("Refusing to build a phantom database")` instead of the cryptic `KeyError: 'variable'` — fail-loud invariant enforced in two layers (build_database_v3.py main + impute_ifgf.py generate_missingness_report)
   4. The `Build Database` workflow run on `meta` succeeds on a github-hosted runner using only `secrets.HF_TOKEN` (read-scoped) — first successful run in project history. All `actions/checkout@v4` and `actions/upload-artifact@v4` references are bumped to `@v5` (Node 24 compatible)
@@ -225,7 +225,7 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 11-01-PLAN.md — HF dataset bootstrap: scripts/publish_to_hf.py + matheus-rech/icskg-br-processed@v0.1.0 publish
+- [ ] 11-01-PLAN.md — HF dataset bootstrap: scripts/publish_to_hf.py + mmrech/icskg-br-processed@v0.1.0 publish
 - [ ] 11-02-PLAN.md — Fetcher + fail-loud guards: database/fetch_processed_data.py, --from-hf flag in build_database_v3, schema-pin in impute_ifgf, smoke fixture
 - [ ] 11-03-PLAN.md — CI workflow rewrite: build-database.yml HF-pull + Node 20→24 bump + new build-database-smoke.yml on push/PR
 - [ ] 11-04-PLAN.md — Replication docs: docs/REPLICATION.md + docs/REPLICATION.test.sh + README Reproducibility section

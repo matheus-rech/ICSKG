@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-DEFAULT_REPO_ID = "matheus-rech/icskg-br-processed"
+DEFAULT_REPO_ID = "mmrech/icskg-br-processed"
 ZENODO_BASE_URLS = {
     "sandbox": "https://sandbox.zenodo.org",
     "production": "https://zenodo.org",

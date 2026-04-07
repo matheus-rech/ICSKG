@@ -7,7 +7,7 @@ parquet tree and publish to a HuggingFace Dataset repository.
 This is the publish-side of the Phase 11 reproducibility refactor.
 The canonical processed-data store moves from `/Volumes/home/DataLake/30_models/
 icskg_br/*.duckdb` (NAS-only, ~516 MB) to a versioned HF Dataset
-(default: `matheus-rech/icskg-br-processed`) so that GitHub Actions
+(default: `mmrech/icskg-br-processed`) so that GitHub Actions
 runners and BMJ Global Health peer reviewers can reproduce the build
 without NAS access.
 
@@ -82,7 +82,7 @@ _DUCKDB_IDENT_RE: re.Pattern[str] = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
 # Constants
 # ---------------------------------------------------------------------------
 
-DEFAULT_REPO_ID = "matheus-rech/icskg-br-processed"
+DEFAULT_REPO_ID = "mmrech/icskg-br-processed"
 DEFAULT_SOURCE_DUCKDB = Path(
     "/Volumes/home/DataLake/30_models/icskg_br/icskg_br_export.duckdb"
 )
@@ -328,7 +328,7 @@ def build_manifest(
     conversion_result : dict
         Output of duckdb_to_parquet_tree().
     dataset_name : str
-        HF dataset repo id (e.g., "matheus-rech/icskg-br-processed").
+        HF dataset repo id (e.g., "mmrech/icskg-br-processed").
     dataset_version : str
         Semantic version tag (e.g., "v0.1.0").
 
@@ -514,7 +514,7 @@ def publish_to_hf(
     working_dir : Path
         Local directory containing the parquet tree, manifest.json, README.md.
     repo_id : str
-        HF dataset repo id (e.g., "matheus-rech/icskg-br-processed").
+        HF dataset repo id (e.g., "mmrech/icskg-br-processed").
     dataset_version : str
         Tag name to create after upload (e.g., "v0.1.0").
     commit_message : str

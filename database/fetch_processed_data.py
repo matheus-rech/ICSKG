@@ -7,7 +7,7 @@ and verify its integrity locally.
 This is the consume-side of the Phase 11 reproducibility refactor.
 The publish-side (`scripts/publish_to_hf.py`) takes the user's NAS-only
 DuckDB exports and uploads them to a versioned HuggingFace Dataset
-(default: `matheus-rech/icskg-br-processed`). This module fetches that
+(default: `mmrech/icskg-br-processed`). This module fetches that
 dataset on github-hosted runners or peer reviewers' laptops with no
 NAS access required.
 
@@ -63,7 +63,7 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-DEFAULT_REPO_ID = "matheus-rech/icskg-br-processed"
+DEFAULT_REPO_ID = "mmrech/icskg-br-processed"
 DEFAULT_ALLOW_PATTERNS = ["**/*.parquet", "manifest.json", "README.md"]
 DEFAULT_PANEL_PATH = "panel/municipal_health.parquet"
 EXPECTED_FULL_PANEL_ROWS = 50130  # 5,570 municipalities × 9 years
@@ -181,7 +181,7 @@ def fetch_processed_tree(
     Parameters
     ----------
     repo_id : str
-        HF dataset repo id (e.g., "matheus-rech/icskg-br-processed").
+        HF dataset repo id (e.g., "mmrech/icskg-br-processed").
     revision : str
         Tag or commit SHA (e.g., "v0.1.0").
     target_dir : Path
