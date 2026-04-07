@@ -43,6 +43,8 @@ dependencies = [
     "python-dotenv>=1.0",
     # Configuration
     "pyyaml>=6.0",
+    # HuggingFace Datasets — canonical processed-data store (Phase 11)
+    "huggingface_hub>=0.26",
 ]
 
 [dependency-groups]
