@@ -396,7 +396,7 @@ def upload_files(
     for path in candidates:
         if not path.is_file():
             continue
-        if any(skip in path.name for skip in SKIP_PATTERNS):
+        if any(path.name == skip for skip in SKIP_PATTERNS):
             logger.debug("Skipping %s (matches SKIP_PATTERNS)", path.name)
             continue
 
