@@ -569,7 +569,7 @@ def duckdb_to_parquet_tree(
         required_for_panel = {
             "municipalities", "population", "gdp", "ifgf", "idhm",
             "ans_cobertura", "censo2022_saneamento", "mobility",
-            "sih_municipal", "sao_workforce", "v_lcogs_panel",
+            "sih_municipal", "sao_workforce",
         }
         present_table_names = {t["table"] for t in tables_out}
         missing = required_for_panel - present_table_names
