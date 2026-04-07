@@ -19,7 +19,8 @@ ICSKG-BR is a fully reproducible study. Anyone with Python 3.12, git, and a Hugg
 | Visibility | Private during BMJ Global Health pre-submission, then CC-BY-4.0 public |
 | Format | Parquet tree (`panel/`, `dimensions/`, `lcogs/`, `source_tables/`) + `manifest.json` with per-file SHA256 |
 | Total size | ~150 MB compressed |
-| Panel invariant | 5,570 municipalities × 9 years = 50,130 rows in `panel/municipal_health.parquet` |
+| Published HF panel invariant | 5,570 municipalities × 9 years = 50,130 rows in `panel/municipal_health.parquet` |
+| Local scaffold/reference invariant | 5,571 IBGE rows per year (the source-build scaffold and `municipality_lookup` retain the extra `2605459` / Fernando de Noronha reference row), so the 2022–2023 smoke build asserts 11,142 scaffold rows |
 | DOI (data) | _Will be minted via `scripts/mirror_to_zenodo.py` at BMJ acceptance — sandbox-validated_ |
 | DOI (code) | _Pending GitHub release at submission_ |
 
@@ -35,6 +36,12 @@ python -m database.fetch_processed_data --revision v0.1.0 --to database/icskg_br
 sqlite3 database/icskg_br.sqlite "SELECT COUNT(*) FROM municipal_health"
 # Expected: 50130
 ```
+
+The published HuggingFace panel is a 50,130-row municipality-year release
+artifact (5,570 municipalities × 2015–2023). The local from-source build path
+still seeds the full 5,571-row IBGE reference list, so smoke tests that build a
+two-year scaffold from source correctly assert 11,142 rows before any release
+time filtering.
 
 For the full step-by-step walkthrough (prerequisites, troubleshooting, expected output, and analysis reproduction), see [`docs/REPLICATION.md`](docs/REPLICATION.md).
 

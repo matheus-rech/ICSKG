@@ -358,10 +358,12 @@ class TestFailLoudGuard:
         smoke_fixture = (
             Path(__file__).parent / "fixtures" / "processed_smoke"
         )
-        # Skip cleanly if the fixture isn't present (avoids breaking other
-        # CI environments where the fixture might be excluded).
-        if not smoke_fixture.exists():
-            pytest.skip("smoke fixture not present")
+        assert smoke_fixture.exists(), (
+            "Committed smoke fixture missing: %s. "
+            "tests/fixtures/processed_smoke must ship with the repo because "
+            "the smoke build is part of the reproducible CI contract."
+            % smoke_fixture
+        )
 
         db_dir = tmp_path / "db"
 

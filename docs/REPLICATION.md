@@ -1,6 +1,6 @@
 # Reproducing the ICSKG-BR build
 
-This walkthrough takes a fresh git clone of [matheus-rech/ICSKG](https://github.com/matheus-rech/ICSKG) and produces a working `database/icskg_br.sqlite` containing the full 50,139-row municipality-year panel (5,571 municipalities per year) in **under 15 minutes** with no NAS access. It is the canonical replication path for **BMJ Global Health peer reviewers** and any researcher who wants to verify the published dataset.
+This walkthrough takes a fresh git clone of [matheus-rech/ICSKG](https://github.com/matheus-rech/ICSKG) and produces a working `database/icskg_br.sqlite` containing the published 50,130-row municipality-year panel (5,570 municipalities × 9 years) in **under 15 minutes** with no NAS access. It is the canonical replication path for **BMJ Global Health peer reviewers** and any researcher who wants to verify the published dataset.
 
 If you find any step that doesn't work as documented, please [open an issue](https://github.com/matheus-rech/ICSKG/issues/new) — and run `bash docs/REPLICATION.test.sh` first to capture the exact failing step.
 
@@ -55,6 +55,14 @@ sqlite3 database/icskg_br.sqlite "SELECT COUNT(*) FROM municipal_health"
 ```
 
 That's it. The resulting `database/icskg_br.sqlite` contains the same panel that backs every figure and table in the BMJ Global Health manuscript.
+
+> **Why do some local code paths still use 5,571 rows/year?**  
+> The source-build scaffold and `municipality_lookup` table retain the full
+> 5,571-row IBGE reference CSV checked into the repo, which includes
+> `2605459` / Fernando de Noronha. That is why `database.build_database_v3`
+> smoke tests assert 11,142 rows for a two-year source build. The published HF
+> release panel is the filtered 5,570-municipality artifact, so its canonical
+> verification invariant remains 50,130 rows.
 
 ---
 
@@ -159,7 +167,7 @@ What this does, step by step:
    - For every table entry, computes the SHA256 of the local parquet file and compares against the recorded hash
    - Reads parquet metadata to confirm the row count matches the manifest
    - Raises `RuntimeError` on any mismatch (catches cache corruption / tampering)
-4. **Verifies the panel invariant**: `panel/municipal_health.parquet` must have exactly **50,130 rows** (5,570 IBGE municipalities × 9 years 2015-2023). This is the canonical ICSKG-BR invariant.
+4. **Verifies the published panel invariant**: `panel/municipal_health.parquet` must have exactly **50,130 rows** (5,570 municipalities × 9 years 2015-2023). This is the canonical release artifact invariant. The local source-build scaffold remains 5,571 rows/year because it preserves the full checked-in IBGE reference list, including Fernando de Noronha.
 5. **Materializes a SQLite** at `database/icskg_br.sqlite` by walking the parquet tree and ingesting each file as a table via `pandas.read_parquet` + `pandas.DataFrame.to_sql` (stdlib `sqlite3`, no DuckDB required).
 
 Total time: ~5 minutes on first run (download bound), ~1 minute on cache hit (no download).

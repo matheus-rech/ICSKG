@@ -297,9 +297,14 @@ def test_publish_to_hf_dry_run_skips_upload(tmp_path):
     working.mkdir()
     (working / "manifest.json").write_text("{}")
 
-    # Patch huggingface_hub at the module level — but it shouldn't be imported
-    # at all in dry_run mode (lazy import inside the publish branch).
-    with patch.dict("sys.modules", {"huggingface_hub": MagicMock()}):
+    original_import = __import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name == "huggingface_hub" or name.startswith("huggingface_hub."):
+            raise AssertionError("dry-run must not import huggingface_hub")
+        return original_import(name, *args, **kwargs)
+
+    with patch("builtins.__import__", side_effect=guarded_import):
         url = publish_to_hf(
             working_dir=working,
             repo_id="test/icskg",
