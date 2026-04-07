@@ -289,7 +289,10 @@ class TestFailLoudGuards:
             assert "year" in msg
             assert "uf" in msg
             assert "phantom" in msg.lower()
-            assert "--from-hf" in msg
+            # The error must point users at the fetch tool.  We assert on the
+            # real module name (`fetch_processed_data`) rather than the
+            # planned-but-never-built `--from-hf` flag from 11-02-PLAN.md.
+            assert "fetch_processed_data" in msg
 
     def test_report_columns_constant_is_pinned(self) -> None:
         """The REPORT_COLUMNS constant must contain the exact 8 expected columns

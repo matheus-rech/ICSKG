@@ -254,6 +254,7 @@ def generate_missingness_report(
             "a phantom missingness report. Check that data_sources/processed/ "
             "is populated, or fetch from HuggingFace via "
             "`python -m database.fetch_processed_data --to <db_path>`."
+            % (len(panel), sorted(panel.columns))
         )
 
     years = sorted(panel["year"].unique())
