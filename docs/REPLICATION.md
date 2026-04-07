@@ -160,7 +160,7 @@ What this does, step by step:
    - Reads parquet metadata to confirm the row count matches the manifest
    - Raises `RuntimeError` on any mismatch (catches cache corruption / tampering)
 4. **Verifies the panel invariant**: `panel/municipal_health.parquet` must have exactly **50,130 rows** (5,570 IBGE municipalities × 9 years 2015-2023). This is the canonical ICSKG-BR invariant.
-5. **Materializes a SQLite** at `database/icskg_br.sqlite` by walking the parquet tree and ingesting each file as a table via DuckDB's `sqlite_scanner` extension.
+5. **Materializes a SQLite** at `database/icskg_br.sqlite` by walking the parquet tree and ingesting each file as a table via `pandas.read_parquet` + `pandas.DataFrame.to_sql` (stdlib `sqlite3`, no DuckDB required).
 
 Total time: ~5 minutes on first run (download bound), ~1 minute on cache hit (no download).
 
