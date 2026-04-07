@@ -1,0 +1,138 @@
+# ICSKG-BR Database — Smoke Build (auto on every push/PR)
+# =========================================================
+# Runs the LOCAL build pipeline (assemble_panel → impute_ifgf → build_database)
+# against the committed `tests/fixtures/processed_smoke/` fixture on every push
+# to meta/feature branches and every PR to meta. Catches pipeline regressions
+# in <5 minutes with no HuggingFace network calls and no secrets required.
+#
+# This is the everyday CI signal. The full HF-fetch workflow
+# (build-database.yml) is a manual workflow_dispatch for fetching the
+# pre-built canonical dataset.
+#
+# Security: this workflow does NOT consume any user-controlled input
+# (only the committed repo state and the github.sha string for the
+# artifact name). All secrets are unset.
+
+name: Build Database (smoke)
+
+on:
+  push:
+    branches:
+      - meta
+      - "feature/**"
+    paths:
+      - "database/**"
+      - "scripts/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/build-database-smoke.yml"
+  pull_request:
+    branches:
+      - meta
+    paths:
+      - "database/**"
+      - "scripts/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/build-database-smoke.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-database-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Smoke build (committed fixture, no HF, no secrets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install dependency-groups
+          pip-install-dependency-groups dev
+
+      - name: Run unit tests (fail fast)
+        run: python -m pytest tests/ -v --tb=short -x
+
+      - name: Smoke build against committed fixture
+        run: |
+          rm -rf /tmp/icskg_smoke
+          python -m database.build_database_v3 \
+            --processed-dir tests/fixtures/processed_smoke \
+            --db-dir /tmp/icskg_smoke \
+            --years 2022 2023
+
+      - name: Verify smoke outputs
+        run: |
+          if [ ! -f /tmp/icskg_smoke/icskg_br.sqlite ]; then
+            echo "Missing /tmp/icskg_smoke/icskg_br.sqlite" >&2
+            exit 1
+          fi
+          # Inline Python is safe — no user-controlled values are interpolated.
+          python <<'PYSMOKE'
+          import sqlite3
+          conn = sqlite3.connect("/tmp/icskg_smoke/icskg_br.sqlite")
+          n = conn.execute("SELECT COUNT(*) FROM municipal_health").fetchone()[0]
+          assert n == 11142, f"Expected 5571 mun x 2 years = 11142 smoke rows, got {n}"
+          # Confirm the 5 fixture municipalities have non-NaN ifgf_geral
+          # with ifgf_is_imputed = 0 (i.e., they were observed, not imputed)
+          observed = conn.execute(
+              "SELECT COUNT(*) FROM municipal_health "
+              "WHERE cod_ibge IN ('3550308','2611606','4314902','5300108','1302603') "
+              "AND ifgf_is_imputed = 0 AND ifgf_geral IS NOT NULL"
+          ).fetchone()[0]
+          assert observed == 10, f"Expected 10 observed fixture rows, got {observed}"
+          print(f"Smoke build OK: {n} total rows, {observed} observed fixture rows")
+          conn.close()
+          PYSMOKE
+
+      - name: Verify fail-loud guard fires on empty processed_dir
+        run: |
+          rm -rf /tmp/icskg_empty_processed /tmp/icskg_empty_db
+          mkdir -p /tmp/icskg_empty_processed
+          set +e
+          python -m database.build_database_v3 \
+            --processed-dir /tmp/icskg_empty_processed \
+            --db-dir /tmp/icskg_empty_db \
+            --years 2022 2023 > /tmp/icskg_guard_output.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/icskg_guard_output.log
+          if [ "$rc" -eq 0 ]; then
+            echo "ERROR: build_database_v3 succeeded on empty input — fail-loud guard is broken" >&2
+            exit 1
+          fi
+          if ! grep -q "Refusing to build a phantom database" /tmp/icskg_guard_output.log; then
+            echo "ERROR: expected guard message not found in output" >&2
+            exit 1
+          fi
+          if [ -f /tmp/icskg_empty_db/icskg_br.sqlite ]; then
+            echo "ERROR: guard fired but icskg_br.sqlite was still written — partial state leak" >&2
+            exit 1
+          fi
+          echo "Fail-loud guard verified: RuntimeError with expected message, no sqlite written"
+
+      - name: Upload smoke sqlite as artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: icskg-br-smoke-sqlite-${{ github.sha }}
+          path: /tmp/icskg_smoke/icskg_br.sqlite
+          retention-days: 7
+          if-no-files-found: error
