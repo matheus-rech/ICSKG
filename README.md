@@ -9,17 +9,45 @@ across all 5 570 Brazilian municipalities for the period 2013–2024.
 
 ## Reproducibility
 
-ICSKG-BR's processed data is published as a versioned HuggingFace Dataset:
-[`matheus-rech/icskg-br-processed`](https://huggingface.co/datasets/matheus-rech/icskg-br-processed).
+ICSKG-BR is a fully reproducible study. Anyone with Python 3.12, git, and a HuggingFace read token can rebuild the published database from a fresh clone in **under 15 minutes** with no NAS access and no special infrastructure.
+
+**Canonical processed data:** [`matheus-rech/icskg-br-processed`](https://huggingface.co/datasets/matheus-rech/icskg-br-processed) on HuggingFace Datasets, version-pinned per release.
 
 | Item | Value |
 |---|---|
 | Current data revision | `v0.1.0` |
 | Visibility | Private during BMJ Global Health pre-submission, then CC-BY-4.0 public |
-| Format | Parquet tree (`panel/`, `dimensions/`, `lcogs/`, `source_tables/`) + `manifest.json` |
-| DOI | _Pending Zenodo mirror at submission_ |
+| Format | Parquet tree (`panel/`, `dimensions/`, `lcogs/`, `source_tables/`) + `manifest.json` with per-file SHA256 |
+| Total size | ~150 MB compressed |
+| Panel invariant | 5,570 municipalities × 9 years = 50,130 rows in `panel/municipal_health.parquet` |
+| DOI (data) | _Will be minted via `scripts/mirror_to_zenodo.py` at BMJ acceptance — sandbox-validated_ |
+| DOI (code) | _Pending GitHub release at submission_ |
 
-The full step-by-step replication walkthrough lives at `docs/REPLICATION.md` (added in Phase 11.4).
+> **Note for BMJ peer reviewers:** The Zenodo DOI will be minted at acceptance. Until then, cite the HuggingFace Dataset revision `v0.1.0` directly.
+
+### Quick replication
+
+```bash
+git clone https://github.com/matheus-rech/ICSKG.git && cd ICSKG
+uv sync
+export HF_TOKEN=hf_...   # from https://huggingface.co/settings/tokens
+python -m database.fetch_processed_data --revision v0.1.0 --to database/icskg_br.sqlite
+sqlite3 database/icskg_br.sqlite "SELECT COUNT(*) FROM municipal_health"
+# Expected: 50130
+```
+
+For the full step-by-step walkthrough (prerequisites, troubleshooting, expected output, and analysis reproduction), see [`docs/REPLICATION.md`](docs/REPLICATION.md).
+
+For maintainers: [`docs/REPLICATION.test.sh`](docs/REPLICATION.test.sh) runs the end-to-end replication path against a fresh clone — run this before every release and before sending the dataset to BMJ reviewers.
+
+### Continuous integration
+
+Two GitHub Actions workflows verify reproducibility on every change:
+
+| Workflow | Trigger | Duration | Purpose |
+|---|---|---|---|
+| **Build Database (smoke)** | Every push to `meta`/`feature/**`, every PR to `meta` | <5 min | Runs the full local pipeline against the committed `tests/fixtures/processed_smoke/` fixture (50 KB, 5 mun × 2 years × 11 sources) and verifies the fail-loud guard fires on empty input. No secrets required. |
+| **Build Database** | Manual `workflow_dispatch` | ~10 min | Fetches the pre-built database from HuggingFace at the chosen revision, verifies SHA256s + 50,130-row invariant, materializes a SQLite, and uploads it as an artifact. Requires `HF_TOKEN` repo secret. |
 
 ---
 
