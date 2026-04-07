@@ -252,8 +252,8 @@ def generate_missingness_report(
             "(panel has %d rows, columns: %s). "
             "This indicates an upstream ETL failure -- refusing to write "
             "a phantom missingness report. Check that data_sources/processed/ "
-            "is populated, or pass --from-hf <revision> to fetch from "
-            "HuggingFace." % (len(panel), sorted(panel.columns))
+            "is populated, or fetch from HuggingFace via "
+            "`python -m database.fetch_processed_data --to <db_path>`."
         )
 
     years = sorted(panel["year"].unique())
