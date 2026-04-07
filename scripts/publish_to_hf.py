@@ -62,6 +62,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -70,6 +71,12 @@ from typing import Any
 import duckdb
 
 logger = logging.getLogger(__name__)
+
+# Whitelist for DuckDB table names — refuses anything that contains characters
+# requiring escaping. The canonical ICSKG-BR DuckDB only contains ASCII
+# snake_case table names; this is defense-in-depth against a future ETL bug
+# producing a weird name that would corrupt the COPY SQL string.
+_DUCKDB_IDENT_RE: re.Pattern[str] = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -233,25 +240,41 @@ def duckdb_to_parquet_tree(
                 )
                 continue
 
+            # Defense-in-depth: refuse any table whose name doesn't fit the
+            # safe identifier pattern. The canonical ICSKG-BR DuckDB never
+            # produces such names, but a future ETL bug could.
+            if not _DUCKDB_IDENT_RE.match(table_name):
+                skipped.append(
+                    {"name": table_name, "reason": "unsafe identifier — refused"}
+                )
+                logger.warning(
+                    "Skipping table %r (does not match %s)",
+                    table_name, _DUCKDB_IDENT_RE.pattern,
+                )
+                continue
+
             namespace = assign_namespace(table_name)
             ns_dir = working_dir / namespace
             ns_dir.mkdir(parents=True, exist_ok=True)
             parquet_path = ns_dir / ("%s.parquet" % table_name)
 
-            # Use DuckDB COPY for native parquet write with zstd compression
+            # Escape any single quote in the parquet path for the SQL literal.
+            # On a sanely-named filesystem this is a no-op, but a path like
+            # /Users/o'brien/... would otherwise break the COPY statement.
+            escaped_path = str(parquet_path).replace("'", "''")
             copy_sql = (
-                "COPY (SELECT * FROM \"%s\") TO '%s' "
+                'COPY (SELECT * FROM "%s") TO \'%s\' '
                 "(FORMAT PARQUET, COMPRESSION ZSTD, "
                 "COMPRESSION_LEVEL %d, ROW_GROUP_SIZE 100000)"
-                % (table_name, parquet_path, compression_level)
+                % (table_name, escaped_path, compression_level)
             )
             conn.execute(copy_sql)
 
             row_count = conn.execute(
-                "SELECT COUNT(*) FROM \"%s\"" % table_name
+                'SELECT COUNT(*) FROM "%s"' % table_name
             ).fetchone()[0]
             schema_rows = conn.execute(
-                "DESCRIBE \"%s\"" % table_name
+                'DESCRIBE "%s"' % table_name
             ).fetchall()
             schema = [
                 {"name": r[0], "type": r[1], "nullable": r[2] == "YES"}

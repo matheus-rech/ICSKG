@@ -362,3 +362,117 @@ def test_main_rejects_invalid_target(real_zenodo_json):
             "--target", "staging",  # not allowed
             "--zenodo-json", str(real_zenodo_json),
         ])
+
+
+# ---------------------------------------------------------------------------
+# Phase 11 security hardening tests (post-validation)
+# ---------------------------------------------------------------------------
+
+
+class TestBracketPlaceholderDetection:
+    """The PLACEHOLDER_MARKERS keyword check misses generic [...] stubs like
+    `[GitHub URL]` that aren't in the explicit list. The bracket regex layer
+    catches them generically."""
+
+    def _make_zenodo(self, tmp_path: Path, **overrides) -> Path:
+        m = {
+            "title": "ICSKG-BR Test",
+            "description": "test",
+            "creators": [{"name": "Real Name", "affiliation": "Real Place"}],
+            "license": "cc-by-4.0",
+            "upload_type": "dataset",
+        }
+        m.update(overrides)
+        path = tmp_path / "z.json"
+        path.write_text(json.dumps(m))
+        return path
+
+    def test_rejects_github_url_placeholder(self, tmp_path):
+        """The original .zenodo.json had `identifier: [GitHub URL]` which
+        slipped past the keyword markers — now caught by the bracket regex."""
+        path = self._make_zenodo(
+            tmp_path,
+            related_identifiers=[
+                {
+                    "identifier": "[GitHub URL]",
+                    "relation": "isSupplementTo",
+                    "scheme": "url",
+                }
+            ],
+        )
+        with pytest.raises(ValueError, match="placeholder"):
+            load_zenodo_metadata(path)
+
+    def test_rejects_arbitrary_bracket_placeholder(self, tmp_path):
+        path = self._make_zenodo(tmp_path, version="[Real Version]")
+        with pytest.raises(ValueError, match="placeholder"):
+            load_zenodo_metadata(path)
+
+    def test_accepts_unrelated_brackets(self, tmp_path):
+        """A description like `Step 1: [first] then [second]` has brackets but
+        is not a stub — the regex must match the WHOLE trimmed string only."""
+        path = self._make_zenodo(
+            tmp_path,
+            description="Step 1: [first step], step 2: [second step]",
+        )
+        # Should NOT raise — the bracket regex requires ^...$ on the trimmed
+        # string, so a sentence with brackets in the middle is fine.
+        metadata = load_zenodo_metadata(path)
+        assert metadata["title"] == "ICSKG-BR Test"
+
+
+class TestZenodoUrlWhitelist:
+    """create_zenodo_deposition / upload_files / publish_deposition trust
+    response URLs from the Zenodo API. They must be validated against the
+    expected host before any token is sent to them."""
+
+    def test_validate_zenodo_url_accepts_sandbox(self):
+        from scripts.mirror_to_zenodo import _validate_zenodo_url
+        url = "https://sandbox.zenodo.org/api/files/abc"
+        assert _validate_zenodo_url(url, "sandbox") == url
+
+    def test_validate_zenodo_url_accepts_production(self):
+        from scripts.mirror_to_zenodo import _validate_zenodo_url
+        url = "https://zenodo.org/api/deposit/depositions/123"
+        assert _validate_zenodo_url(url, "production") == url
+
+    def test_validate_zenodo_url_rejects_non_https(self):
+        from scripts.mirror_to_zenodo import _validate_zenodo_url
+        with pytest.raises(RuntimeError, match="non-HTTPS"):
+            _validate_zenodo_url("http://sandbox.zenodo.org/api", "sandbox")
+
+    def test_validate_zenodo_url_rejects_wrong_host(self):
+        from scripts.mirror_to_zenodo import _validate_zenodo_url
+        with pytest.raises(RuntimeError, match="unexpected host"):
+            _validate_zenodo_url("https://evil.example.com/api", "sandbox")
+
+    def test_validate_zenodo_url_rejects_production_host_for_sandbox_target(self):
+        """Even a real Zenodo URL is rejected if it doesn't match the chosen target."""
+        from scripts.mirror_to_zenodo import _validate_zenodo_url
+        with pytest.raises(RuntimeError, match="unexpected host"):
+            _validate_zenodo_url("https://zenodo.org/api", "sandbox")
+
+    def test_upload_files_rejects_tampered_bucket_url(self, tmp_path):
+        """A deposition response with a swapped bucket URL must abort the
+        upload before any file is sent (or any token is leaked)."""
+        from scripts.mirror_to_zenodo import upload_files
+        (tmp_path / "x.parquet").write_bytes(b"data")
+        tampered_deposition = {
+            "id": 1,
+            "links": {
+                "bucket": "https://evil.example.com/bucket",  # swapped!
+                "files": "https://sandbox.zenodo.org/api/files",
+            },
+        }
+        fake_requests = MagicMock()
+        with patch.dict(sys.modules, {"requests": fake_requests}):
+            with pytest.raises(RuntimeError, match="unexpected host"):
+                upload_files(
+                    deposition=tampered_deposition,
+                    files_dir=tmp_path,
+                    target="sandbox",
+                    zenodo_token="fake",
+                )
+        # Token never reached the network
+        fake_requests.put.assert_not_called()
+        fake_requests.post.assert_not_called()

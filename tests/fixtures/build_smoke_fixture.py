@@ -50,6 +50,7 @@ import hashlib
 import json
 import shutil
 import sys
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -285,7 +286,7 @@ def build_siops(base: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 
-SOURCE_BUILDERS: dict[str, tuple[str, callable]] = {
+SOURCE_BUILDERS: dict[str, tuple[str, Callable[..., pd.DataFrame]]] = {
     "sih/sih.parquet":                       ("ts", build_sih),
     "cnes/facilities_smoke.parquet":         ("ts", build_cnes_facilities),
     "cnes/professionals_smoke.parquet":      ("ts", build_cnes_professionals),

@@ -64,9 +64,11 @@ import argparse
 import json
 import logging
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +85,10 @@ ZENODO_TOKEN_ENV_VARS = {
     "sandbox": "ZENODO_TOKEN_SANDBOX",
     "production": "ZENODO_TOKEN",
 }
+ZENODO_EXPECTED_HOSTS = {
+    "sandbox": "sandbox.zenodo.org",
+    "production": "zenodo.org",
+}
 
 # Strings that indicate the .zenodo.json still has placeholders.
 # These get checked case-insensitively as substrings of every string value.
@@ -97,6 +103,11 @@ PLACEHOLDER_MARKERS: tuple[str, ...] = (
     "to be filled",
     "TODO",
 )
+
+# Generic [Bracketed Placeholder] regex — catches any string that looks like
+# a stub even if it's not in PLACEHOLDER_MARKERS. Matches the entire trimmed
+# value, e.g. "[GitHub URL]", "[Real Institution]", "[Funder Grant ID]".
+_BRACKET_PLACEHOLDER_RE: re.Pattern[str] = re.compile(r"^\[[^\]]{1,80}\]$")
 
 # Files we never upload to Zenodo (working state, system files)
 SKIP_PATTERNS: tuple[str, ...] = (
@@ -131,15 +142,27 @@ def _resolve_zenodo_token(target: str, explicit: str | None = None) -> str:
 def _walk_for_placeholders(value: Any, path: str = "") -> list[str]:
     """Recursively find placeholder substrings inside a parsed JSON value.
 
+    Two layers of detection:
+      1. Substring match against PLACEHOLDER_MARKERS (e.g., "[Author Name]")
+      2. Generic [Bracketed Placeholder] regex on the full trimmed string
+         (catches future stubs like "[GitHub URL]" without an explicit entry)
+
     Returns a list of dotted paths where placeholder markers were found.
     """
     found: list[str] = []
     if isinstance(value, str):
         lower = value.lower()
+        marker_hit = False
         for marker in PLACEHOLDER_MARKERS:
             if marker.lower() in lower:
                 found.append("%s = %r" % (path or "<root>", value))
+                marker_hit = True
                 break
+        if not marker_hit and _BRACKET_PLACEHOLDER_RE.match(value.strip()):
+            found.append(
+                "%s = %r (looks like a [Bracketed Placeholder])"
+                % (path or "<root>", value)
+            )
     elif isinstance(value, dict):
         for k, v in value.items():
             sub_path = "%s.%s" % (path, k) if path else k
@@ -149,6 +172,28 @@ def _walk_for_placeholders(value: Any, path: str = "") -> list[str]:
             sub_path = "%s[%d]" % (path, i)
             found.extend(_walk_for_placeholders(v, sub_path))
     return found
+
+
+def _validate_zenodo_url(url: str, target: str, *, label: str = "URL") -> str:
+    """Refuse non-HTTPS or non-Zenodo URLs returned by the Zenodo API.
+
+    The Zenodo create_deposition response includes links.bucket / links.publish
+    that we then POST/PUT against with our deposit:write token. A MITM (or
+    response tampering) could swap these to attacker-controlled hosts and
+    leak the token. Since we know the host already, we whitelist it.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        raise RuntimeError(
+            "Refusing %s with non-HTTPS scheme: %s" % (label, url)
+        )
+    expected = ZENODO_EXPECTED_HOSTS[target]
+    if parsed.netloc != expected:
+        raise RuntimeError(
+            "Refusing %s with unexpected host %s (expected %s): %s"
+            % (label, parsed.netloc, expected, url)
+        )
+    return url
 
 
 # ---------------------------------------------------------------------------
@@ -244,7 +289,6 @@ def fetch_from_hf(
         repo_type="dataset",
         revision=revision,
         local_dir=str(target_dir),
-        local_dir_use_symlinks=False,
         allow_patterns=["**/*.parquet", "manifest.json", "README.md"],
         token=hf_token,
     )
@@ -330,8 +374,18 @@ def upload_files(
     base = ZENODO_BASE_URLS[target]
     headers = {"Authorization": "Bearer %s" % zenodo_token}
 
-    bucket_url = deposition.get("links", {}).get("bucket")
-    files_url = deposition.get("links", {}).get("files")
+    raw_bucket_url = deposition.get("links", {}).get("bucket")
+    raw_files_url = deposition.get("links", {}).get("files")
+    # Whitelist the response URLs to the expected Zenodo host before sending
+    # the deposit:write token to them.
+    bucket_url = (
+        _validate_zenodo_url(raw_bucket_url, target, label="bucket URL")
+        if raw_bucket_url else None
+    )
+    files_url = (
+        _validate_zenodo_url(raw_files_url, target, label="files URL")
+        if raw_files_url else None
+    )
 
     import requests  # noqa: PLC0415
 
@@ -390,8 +444,12 @@ def publish_deposition(
     deposition unchanged.
     """
     base = ZENODO_BASE_URLS[target]
-    publish_url = deposition.get("links", {}).get("publish")
-    if not publish_url:
+    raw_publish_url = deposition.get("links", {}).get("publish")
+    if raw_publish_url:
+        publish_url = _validate_zenodo_url(
+            raw_publish_url, target, label="publish URL",
+        )
+    else:
         publish_url = "%s/api/deposit/depositions/%d/actions/publish" % (
             base, deposition["id"],
         )

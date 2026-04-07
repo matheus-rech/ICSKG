@@ -52,6 +52,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -66,6 +67,12 @@ DEFAULT_REPO_ID = "matheus-rech/icskg-br-processed"
 DEFAULT_ALLOW_PATTERNS = ["**/*.parquet", "manifest.json", "README.md"]
 DEFAULT_PANEL_PATH = "panel/municipal_health.parquet"
 EXPECTED_FULL_PANEL_ROWS = 50130  # 5,570 municipalities × 9 years
+
+# Whitelist for safe SQLite/identifier table names — prevents SQL injection via
+# parquet basenames in materialize_sqlite. The HF dataset's tables are produced
+# by scripts/publish_to_hf.py which only emits ASCII-named tables, but a
+# tampered HF revision could ship a parquet whose stem is a SQL fragment.
+_SAFE_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
 
 
 # ---------------------------------------------------------------------------
@@ -115,6 +122,41 @@ def _existing_manifest_matches(target_dir: Path, revision: str) -> bool:
             manifest_path, exc,
         )
         return False
+
+
+def _validate_safe_relpath(rel_path: Any, base_dir: Path) -> Path:
+    """Validate a manifest-supplied relative path and resolve it under base_dir.
+
+    Rejects absolute paths, traversal segments (`..`), and any resolved path
+    that escapes `base_dir`. Returns the resolved Path. Raises RuntimeError
+    on any unsafe input.
+
+    This is the trust boundary for manifest.json — every parquet path read
+    from a manifest must pass through this function before being touched.
+    """
+    if not isinstance(rel_path, str) or not rel_path:
+        raise RuntimeError(
+            "Manifest entry has empty or non-string parquet_path: %r" % (rel_path,)
+        )
+    p = Path(rel_path)
+    if p.is_absolute():
+        raise RuntimeError(
+            "Refusing absolute parquet_path from manifest: %r" % rel_path
+        )
+    if any(part in ("..", "") for part in p.parts):
+        raise RuntimeError(
+            "Refusing parquet_path with traversal segments: %r" % rel_path
+        )
+    base_resolved = base_dir.resolve()
+    candidate = (base_dir / p).resolve()
+    try:
+        candidate.relative_to(base_resolved)
+    except ValueError as exc:
+        raise RuntimeError(
+            "parquet_path escapes base directory: %r resolves outside %s"
+            % (rel_path, base_resolved)
+        ) from exc
+    return candidate
 
 
 # ---------------------------------------------------------------------------
@@ -183,7 +225,6 @@ def fetch_processed_tree(
         repo_type="dataset",
         revision=revision,
         local_dir=str(target_dir),
-        local_dir_use_symlinks=False,
         allow_patterns=allow_patterns or DEFAULT_ALLOW_PATTERNS,
         token=token,
     )
@@ -243,9 +284,15 @@ def verify_manifest(local_dir: Path) -> dict[str, Any]:
     # pyarrow.parquet for row count check (no full read)
     import pyarrow.parquet as pq  # noqa: PLC0415
 
+    # Track listed paths so we can detect unlisted parquets after the loop.
+    listed_paths: set[Path] = set()
+
     for entry in tables:
         rel_path = entry["parquet_path"]
-        parquet_path = local_dir / rel_path
+        # Trust boundary: validate path BEFORE any filesystem touch.
+        parquet_path = _validate_safe_relpath(rel_path, local_dir)
+        listed_paths.add(parquet_path)
+
         if not parquet_path.exists():
             raise FileNotFoundError(
                 "Parquet file referenced by manifest not found: %s" % parquet_path
@@ -274,6 +321,18 @@ def verify_manifest(local_dir: Path) -> dict[str, Any]:
         logger.info(
             "  ✓ %-50s %d rows, sha256 %s",
             rel_path, actual_rows, actual_sha[:12],
+        )
+
+    # "No unexpected files" invariant: any parquet on disk that is NOT in the
+    # manifest is a red flag (tampered HF revision shipping un-checked files).
+    on_disk = {p.resolve() for p in local_dir.rglob("*.parquet")}
+    extra = on_disk - listed_paths
+    if extra:
+        extra_rel = sorted(p.relative_to(local_dir.resolve()).as_posix() for p in extra)
+        raise RuntimeError(
+            "Unlisted parquet files found in fetched tree (%d): %s. "
+            "Refusing to proceed — manifest must enumerate every parquet."
+            % (len(extra_rel), extra_rel)
         )
 
     logger.info("Manifest verification passed: %d tables OK", len(tables))
@@ -328,20 +387,28 @@ def verify_panel_row_count(
     logger.info(
         "Panel row count: %d (expected %d)", n, expected_rows,
     )
-    assert n == expected_rows, (
-        "Panel row count invariant violated: %s has %d rows, expected %d. "
-        "This is a publication-blocking failure — the dataset is incomplete."
-        % (panel_file, n, expected_rows)
-    )
+    # NB: do NOT use `assert` here — assert is stripped under PYTHONOPTIMIZE.
+    # This invariant is publication-blocking and must always be enforced.
+    if n != expected_rows:
+        raise RuntimeError(
+            "Panel row count invariant violated: %s has %d rows, expected %d. "
+            "This is a publication-blocking failure — the dataset is incomplete."
+            % (panel_file, n, expected_rows)
+        )
     return n
 
 
-def materialize_sqlite(local_dir: Path, output_sqlite: Path) -> Path:
-    """Load all parquet files from a fetched HF tree into a fresh SQLite database.
+def materialize_sqlite(
+    local_dir: Path,
+    output_sqlite: Path,
+    *,
+    manifest: dict[str, Any] | None = None,
+) -> Path:
+    """Load parquet files from a fetched HF tree into a fresh SQLite database.
 
-    Walks the parquet tree and ingests each file as a SQLite table named after
-    the parquet basename (without extension). Useful for replicators who prefer
-    a single sqlite file to a parquet tree.
+    Uses Python's stdlib sqlite3 + pandas (no DuckDB extensions, no network
+    INSTALL step). Each parquet file is read into a DataFrame and written
+    via to_sql, which handles type binding safely (no SQL injection).
 
     Parameters
     ----------
@@ -350,6 +417,11 @@ def materialize_sqlite(local_dir: Path, output_sqlite: Path) -> Path:
     output_sqlite : Path
         Output path for the materialized SQLite database. Existing files
         are overwritten.
+    manifest : dict | None
+        If provided, ONLY processes files listed in manifest["tables"]
+        (recommended — inherits the SHA256-verified file set, prevents
+        unlisted-file injection). If None, falls back to walking
+        local_dir.rglob("*.parquet").
 
     Returns
     -------
@@ -362,9 +434,21 @@ def materialize_sqlite(local_dir: Path, output_sqlite: Path) -> Path:
     if output_sqlite.exists():
         output_sqlite.unlink()
 
-    import duckdb  # noqa: PLC0415
+    # Resolve the file list from the manifest (preferred) or by walking the dir
+    if manifest is not None:
+        if "tables" not in manifest:
+            raise RuntimeError("manifest dict has no 'tables' key")
+        parquet_files: list[Path] = []
+        for entry in manifest["tables"]:
+            safe_path = _validate_safe_relpath(entry["parquet_path"], local_dir)
+            if not safe_path.exists():
+                raise FileNotFoundError(
+                    "Parquet listed in manifest not found on disk: %s" % safe_path
+                )
+            parquet_files.append(safe_path)
+    else:
+        parquet_files = sorted(local_dir.rglob("*.parquet"))
 
-    parquet_files = sorted(local_dir.rglob("*.parquet"))
     if not parquet_files:
         raise FileNotFoundError(
             "No parquet files found under %s -- nothing to materialize" % local_dir
@@ -374,28 +458,34 @@ def materialize_sqlite(local_dir: Path, output_sqlite: Path) -> Path:
     logger.info("Materializing %d parquet files into %s", len(parquet_files), output_sqlite)
     logger.info("─" * 70)
 
-    # Use DuckDB's sqlite_scanner extension to write a sqlite db
-    conn = duckdb.connect(":memory:")
+    # Use stdlib sqlite3 + pandas — no DuckDB sqlite extension, no network call,
+    # no string-formatted SQL identifiers. pandas.DataFrame.to_sql parameter-
+    # binds values automatically; the only thing we control is the table name,
+    # which we whitelist below.
+    import sqlite3  # noqa: PLC0415
+
+    import pandas as pd  # noqa: PLC0415
+
+    conn = sqlite3.connect(str(output_sqlite))
     try:
-        conn.execute("INSTALL sqlite")
-        conn.execute("LOAD sqlite")
-        conn.execute("ATTACH '%s' AS sink (TYPE SQLITE)" % output_sqlite)
         for pq_path in parquet_files:
             table_name = pq_path.stem
-            # Skip the manifest if it ever ends in .parquet (it doesn't, but be safe)
-            conn.execute(
-                "CREATE TABLE sink.%s AS SELECT * FROM read_parquet('%s')"
-                % (table_name, pq_path)
-            )
-            n = conn.execute(
-                "SELECT COUNT(*) FROM sink.%s" % table_name
-            ).fetchone()[0]
-            logger.info("  ✓ %-40s %d rows", table_name, n)
-        conn.execute("DETACH sink")
+            if not _SAFE_IDENTIFIER_RE.match(table_name):
+                raise ValueError(
+                    "Refusing to materialize parquet with unsafe table name %r "
+                    "(must match %s)" % (table_name, _SAFE_IDENTIFIER_RE.pattern)
+                )
+            df = pd.read_parquet(pq_path)
+            df.to_sql(table_name, conn, index=False, if_exists="replace")
+            logger.info("  ✓ %-40s %d rows", table_name, len(df))
+        conn.commit()
     finally:
         conn.close()
 
-    logger.info("Materialized %s (%.2f MB)", output_sqlite, output_sqlite.stat().st_size / 1024 / 1024)
+    logger.info(
+        "Materialized %s (%.2f MB)",
+        output_sqlite, output_sqlite.stat().st_size / 1024 / 1024,
+    )
     return output_sqlite
 
 
@@ -468,14 +558,15 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     # Step 2: Verify manifest
-    verify_manifest(target_dir)
+    manifest = verify_manifest(target_dir)
 
     # Step 3: Verify panel row count invariant
     verify_panel_row_count(target_dir, expected_rows=args.expected_rows)
 
-    # Step 4: Optional materialize
+    # Step 4: Optional materialize (manifest-driven so we only ingest the
+    # SHA256-verified file set)
     if args.to is not None:
-        materialize_sqlite(target_dir, args.to)
+        materialize_sqlite(target_dir, args.to, manifest=manifest)
 
     logger.info("─" * 70)
     logger.info("Done. Verified parquet tree at %s", target_dir)
