@@ -128,3 +128,34 @@ This phase produces no new analysis or new dimensions. It is an infrastructure r
 - **Auto-fix CI workflow:** The Claude Code GitHub Action `anthropics/claude-code-action@v1` pattern that auto-fixes failing workflows. Was discussed earlier — on ice until CI is reproducible (no point auto-fixing a broken foundation). Revisit after Phase 11.3 is green.
 
 </deferred>
+
+<scope_decision_v0_1>
+## v0.1.0 LCoGS scope decision (post-implementation, 2026-04-07)
+
+**Context:** Phase 11 was originally framed as a pure infrastructure refactor — move processed data from NAS to HF, no analysis changes. During implementation it surfaced that the source DuckDB and the cookbook v1.0 specification have a real **scope gap**: the cookbook §5 merge pipeline plans 11 source extractors, but only 6 of them have been built. The cookbook §6 CUDS construction (PCA weighting + geometric-mean composite) is also unimplemented. The DuckDB therefore does not contain a `municipal_health` base table, even though `database/fetch_processed_data.py` and `.github/workflows/build-database.yml` were both designed to consume one.
+
+**Decision:** v0.1.0 ships the **LCoGS-side** of the cookbook, with `panel/municipal_health.parquet` derived **at publish time** from the existing source tables via `scripts/publish_to_hf.py::derive_municipal_health_panel()`. The derivation implements cookbook §5.1 merge order against the 6 sources we have:
+
+| Cookbook §  | Source | Status |
+|---|---|---|
+| §3.1 | DATASUS SIH (LCoGS 3 & 4) | ✅ |
+| §3.2 | DATASUS CNES (LCoGS 1 & 2) | ✅ |
+| §3.3 | IBGE SIDRA (demographics + GDP) | ✅ |
+| §3.4 | Atlas Brasil HDI | ✅ |
+| §3.5 | FIRJAN IFGF | ✅ |
+| §3.6 | ANATEL broadband | ❌ deferred to Phase 12 |
+| §3.7 | RAIS employment | ❌ deferred to Phase 12 |
+| §3.8 | SNIS sanitation (Census 2022 used as partial proxy) | ⚠ partial |
+| §3.9 | ANS TABNET insurance | ✅ |
+| §3.10 | SIOPS health spending | ❌ deferred to Phase 12 |
+| §3.11 | International APIs (WHO/World Bank/UNDP) | ❌ deferred to Phase 12 |
+| §6 | CUDS composite (PCA + geometric mean) | ❌ deferred to Phase 12 |
+
+The published `panel/municipal_health.parquet` has 50,130 rows × 49 columns, satisfies cookbook §5.2 invariants (exact row count, no duplicate (cod_ibge, year) pairs), and is fetched + materialized + verified by the `Build Database` CI workflow.
+
+**Trade-off accepted:** the publish-time derivation creates a "publish/build pipeline drift trap" — anyone editing the local build pipeline later might not realize they also need to keep the publish-time SQL in sync. Phase 12 explicitly resolves this by moving the derivation INTO the build pipeline so `municipal_health` becomes a real base table in the source DuckDB.
+
+**Naming alignment:** the cookbook calls the canonical panel `icskg_br_unified_panel.parquet`; the code calls it `panel/municipal_health.parquet`. We chose to keep the code naming and document the alias in the dataset README, because the code is more committed (fetcher constant, workflow assertion, namespace rules). Phase 12 will revisit this when cookbook v1.1 is drafted.
+
+**See also:** `.planning/phases/12-cuds-construction/12-PLAN.md` for the full v0.2.0 work plan.
+</scope_decision_v0_1>
