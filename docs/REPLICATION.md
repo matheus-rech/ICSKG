@@ -137,7 +137,7 @@ huggingface-cli login
 python -m pytest tests/ -v --tb=short
 ```
 
-Expected: **306 tests pass** in ~20 seconds. If anything fails, please [file an issue](https://github.com/matheus-rech/ICSKG/issues/new) with the failing test name and your Python version.
+Expected: **all tests pass** in ~20 seconds. If anything fails, please [file an issue](https://github.com/matheus-rech/ICSKG/issues/new) with the failing test name and your Python version.
 
 ### 6. Fetch and materialize the database
 
