@@ -1,0 +1,358 @@
+{
+  "fixture_name": "ICSKG-BR smoke fixture",
+  "schema_version": "1.0",
+  "generated_at": "2026-04-07T08:41:39Z",
+  "municipalities": [
+    {
+      "cod_ibge": "3550308",
+      "name": "S\u00e3o Paulo",
+      "uf": "SP",
+      "region": "Sudeste"
+    },
+    {
+      "cod_ibge": "2611606",
+      "name": "Recife",
+      "uf": "PE",
+      "region": "Nordeste"
+    },
+    {
+      "cod_ibge": "4314902",
+      "name": "Porto Alegre",
+      "uf": "RS",
+      "region": "Sul"
+    },
+    {
+      "cod_ibge": "5300108",
+      "name": "Bras\u00edlia",
+      "uf": "DF",
+      "region": "Centro-Oeste"
+    },
+    {
+      "cod_ibge": "1302603",
+      "name": "Manaus",
+      "uf": "AM",
+      "region": "Norte"
+    }
+  ],
+  "years": [
+    2022,
+    2023
+  ],
+  "totals": {
+    "table_count": 11,
+    "row_count": 100,
+    "size_bytes": 38362
+  },
+  "files": [
+    {
+      "namespace": "sih",
+      "path": "sih/sih.parquet",
+      "row_count": 10,
+      "column_count": 7,
+      "size_bytes": 4953,
+      "sha256": "7d2754970e61987f145e566c3d9a2421d230178eeff905061fb3fd5fb6b9cdd5",
+      "schema": [
+        {
+          "name": "cod_ibge",
+          "dtype": "object"
+        },
+        {
+          "name": "year",
+          "dtype": "int64"
+        },
+        {
+          "name": "procedure_count",
+          "dtype": "int64"
+        },
+        {
+          "name": "total_value",
+          "dtype": "float64"
+        },
+        {
+          "name": "deaths",
+          "dtype": "int64"
+        },
+        {
+          "name": "aih_count",
+          "dtype": "int64"
+        },
+        {
+          "name": "total_days",
+          "dtype": "int64"
+        }
+      ]
+    },
+    {
+      "namespace": "cnes",
+      "path": "cnes/facilities_smoke.parquet",
+      "row_count": 10,
+      "column_count": 4,
+      "size_bytes": 2937,
+      "sha256": "42ea50d7650d3f99acc47bc05a043d45d2f51abf298049682f39eb13b5a8ee2c",
+      "schema": [
+        {
+          "name": "cod_ibge",
+          "dtype": "object"
+        },
+        {
+          "name": "year",
+          "dtype": "int64"
+        },
+        {
+          "name": "total_beds",
+          "dtype": "int64"
+        },
+        {
+          "name": "is_bellwether",
+          "dtype": "bool"
+        }
+      ]
+    },
+    {
+      "namespace": "cnes",
+      "path": "cnes/professionals_smoke.parquet",
+      "row_count": 10,
+      "column_count": 3,
+      "size_bytes": 2433,
+      "sha256": "a3bbfa7f0b36252f0a83108aba243b83dedc4f43085fc549af46eda2e4fd2d8d",
+      "schema": [
+        {
+          "name": "cod_ibge",
+          "dtype": "object"
+        },
+        {
+          "name": "year",
+          "dtype": "int64"
+        },
+        {
+          "name": "sao_category",
+          "dtype": "int64"
+        }
+      ]
+    },
+    {
+      "namespace": "ibge_sidra",
+      "path": "ibge_sidra/population.parquet",
+      "row_count": 10,
+      "column_count": 3,
+      "size_bytes": 2446,
+      "sha256": "98aacf27974ecd070d3b5425e47d9145d9b901fc72d0d8d3ac2e692ef305764c",
+      "schema": [
+        {
+          "name": "cod_ibge",
+          "dtype": "object"
+        },
+        {
+          "name": "year",
+          "dtype": "int64"
+        },
+        {
+          "name": "populacao",
+          "dtype": "int64"
+        }
+      ]
+    },
+    {
+      "namespace": "ibge_sidra",
+      "path": "ibge_sidra/gdp_per_capita.parquet",
+      "row_count": 10,
+      "column_count": 5,
+      "size_bytes": 3623,
+      "sha256": "01894c66411ec063d31a5284cf26647ca40f15712f00e69ebf3919815b38d887",
+      "schema": [
+        {
+          "name": "cod_ibge",
+          "dtype": "object"
+        },
+        {
+          "name": "year",
+          "dtype": "int64"
+        },
+        {
+          "name": "gdp_abs",
+          "dtype": "int64"
+        },
+        {
+          "name": "gdp_estimated",
+          "dtype": "bool"
+        },
+        {
+          "name": "gdp_per_capita",
+          "dtype": "float64"
+        }
+      ]
+    },
+    {
+      "namespace": "ipea_idhm",
+      "path": "ipea_idhm/idhm.parquet",
+      "row_count": 5,
+      "column_count": 5,
+      "size_bytes": 3777,
+      "sha256": "5b6f7901d7a8ad571a49c352a53a1055a9e448af35fd3b900f18d1271eb8ce31",
+      "schema": [
+        {
+          "name": "cod_ibge",
+          "dtype": "object"
+        },
+        {
+          "name": "idhm",
+          "dtype": "float64"
+        },
+        {
+          "name": "idhm_educacao",
+          "dtype": "float64"
+        },
+        {
+          "name": "idhm_longevidade",
+          "dtype": "float64"
+        },
+        {
+          "name": "idhm_renda",
+          "dtype": "float64"
+        }
+      ]
+    },
+    {
+      "namespace": "ifgf",
+      "path": "ifgf/ifgf.parquet",
+      "row_count": 10,
+      "column_count": 8,
+      "size_bytes": 5671,
+      "sha256": "b7d1f24f84dfb5170097dc6af9842fb381155a055e33991dda3b196930402737",
+      "schema": [
+        {
+          "name": "cod_ibge",
+          "dtype": "object"
+        },
+        {
+          "name": "year",
+          "dtype": "int64"
+        },
+        {
+          "name": "ifgf_geral",
+          "dtype": "float64"
+        },
+        {
+          "name": "ifgf_ra",
+          "dtype": "float64"
+        },
+        {
+          "name": "ifgf_gp",
+          "dtype": "float64"
+        },
+        {
+          "name": "ifgf_id",
+          "dtype": "float64"
+        },
+        {
+          "name": "ifgf_el",
+          "dtype": "float64"
+        },
+        {
+          "name": "ifgf_sa",
+          "dtype": "float64"
+        }
+      ]
+    },
+    {
+      "namespace": "ans",
+      "path": "ans/ans_quarterly.parquet",
+      "row_count": 10,
+      "column_count": 5,
+      "size_bytes": 4027,
+      "sha256": "5969c842c7dec9a548959e020299b282220526e37b6e2903a939e8c982c0596d",
+      "schema": [
+        {
+          "name": "cod_ibge",
+          "dtype": "object"
+        },
+        {
+          "name": "year",
+          "dtype": "int64"
+        },
+        {
+          "name": "beneficiarios_mean",
+          "dtype": "int64"
+        },
+        {
+          "name": "private_coverage_rate",
+          "dtype": "float64"
+        },
+        {
+          "name": "sus_dependence_rate",
+          "dtype": "float64"
+        }
+      ]
+    },
+    {
+      "namespace": "census_sanitation",
+      "path": "census_sanitation/sanitation.parquet",
+      "row_count": 5,
+      "column_count": 3,
+      "size_bytes": 2678,
+      "sha256": "ceb04789ddad2bad2eee2a66bc1f6bd5b03a5834a663dd8105784805184e3b81",
+      "schema": [
+        {
+          "name": "cod_ibge",
+          "dtype": "object"
+        },
+        {
+          "name": "pct_sanitation_adequate",
+          "dtype": "float64"
+        },
+        {
+          "name": "pct_water_adequate",
+          "dtype": "float64"
+        }
+      ]
+    },
+    {
+      "namespace": "renavam",
+      "path": "renavam/renavam.parquet",
+      "row_count": 10,
+      "column_count": 4,
+      "size_bytes": 3206,
+      "sha256": "861a1e05e7bf5a69ee882254212abdb4e2eb2a78c10329613d65a3a6b77d12de",
+      "schema": [
+        {
+          "name": "cod_ibge",
+          "dtype": "object"
+        },
+        {
+          "name": "year",
+          "dtype": "int64"
+        },
+        {
+          "name": "vehicles_total",
+          "dtype": "int64"
+        },
+        {
+          "name": "vehicles_per_1000",
+          "dtype": "float64"
+        }
+      ]
+    },
+    {
+      "namespace": "siops",
+      "path": "siops/siops.parquet",
+      "row_count": 10,
+      "column_count": 3,
+      "size_bytes": 2611,
+      "sha256": "4c059784e7524bccbfe9fcef42ea28b739a2309df7e80257fb529db3c6f2d3e2",
+      "schema": [
+        {
+          "name": "cod_ibge",
+          "dtype": "object"
+        },
+        {
+          "name": "year",
+          "dtype": "int64"
+        },
+        {
+          "name": "health_expenditure_per_capita",
+          "dtype": "float64"
+        }
+      ]
+    }
+  ]
+}
