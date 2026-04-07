@@ -51,10 +51,23 @@ import json
 import shutil
 import sys
 from collections.abc import Callable
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
+
+# Fixed deterministic timestamp — we want byte-identical manifest.json across
+# every run of this script so the fixture commit doesn't drift on rebuild.
+FIXED_GENERATED_AT = "2026-04-07T00:00:00Z"
+
+# .gitignore content for the fixture root — pipeline side-effects from running
+# build_database_v3 against the fixture should never be committed.
+GITIGNORE_CONTENT = """\
+# Pipeline side-effects from running build_database_v3 against this fixture
+# These are regenerated on every build run and should not be committed.
+validation_report.json
+PANL-06-missingness.csv
+_combined_*.parquet
+"""
 
 # ---------------------------------------------------------------------------
 # Constants — 5 real Brazilian municipalities, one per macro-region
@@ -313,6 +326,10 @@ def main() -> int:
         shutil.rmtree(FIXTURE_ROOT)
     FIXTURE_ROOT.mkdir(parents=True)
 
+    # Recreate the .gitignore that excludes pipeline side-effects from being
+    # committed when this fixture is used as a build target.
+    (FIXTURE_ROOT / ".gitignore").write_text(GITIGNORE_CONTENT)
+
     base = _build_panel_index()
     print("\nPanel index: %d rows" % len(base))
 
@@ -344,14 +361,13 @@ def main() -> int:
             % (rel_path, entry["row_count"], entry["column_count"], entry["size_bytes"] / 1024)
         )
 
-    # Write manifest.json
+    # Write manifest.json — uses FIXED_GENERATED_AT (not datetime.now()) so
+    # the fixture is byte-deterministic across re-runs and the commit never
+    # drifts on rebuild.
     manifest = {
         "fixture_name": "ICSKG-BR smoke fixture",
         "schema_version": "1.0",
-        "generated_at": datetime.now(timezone.utc)
-        .replace(microsecond=0)
-        .isoformat()
-        .replace("+00:00", "Z"),
+        "generated_at": FIXED_GENERATED_AT,
         "municipalities": [
             {"cod_ibge": cod, "name": name, "uf": uf, "region": region}
             for cod, name, uf, region in MUNICIPALITIES
