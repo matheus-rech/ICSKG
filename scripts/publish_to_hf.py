@@ -86,7 +86,37 @@ DEFAULT_REPO_ID = "mmrech/icskg-br-processed"
 DEFAULT_SOURCE_DUCKDB = Path(
     "/Volumes/home/DataLake/30_models/icskg_br/icskg_br_export.duckdb"
 )
-SCHEMA_VERSION = "1.0"
+# Schema version 1.1 — adds the derived panel/municipal_health.parquet table
+# (ICSKG-BR Technical Cookbook v1.0 §5 unified panel) to the export.  See
+# derive_municipal_health_panel() below for the merge implementation.
+SCHEMA_VERSION = "1.1"
+
+# Canonical panel invariants (cookbook §5.1, §2.3)
+EXPECTED_PANEL_ROWS = 50130  # 5,570 municipalities × 9 years (2015-2023)
+PANEL_YEAR_RANGE = (2015, 2024)  # half-open: [2015, 2024) = 2015..2023
+
+# Cookbook §5 sources that are PRESENT in the current source DuckDB
+COOKBOOK_SOURCES_PRESENT = (
+    "IBGE population master (§3.3)",
+    "DATASUS SIH surgical aggregates (§3.1)",
+    "DATASUS CNES SAO + bellwether (§3.2)",
+    "IBGE SIDRA GDP (§3.3)",
+    "Atlas Brasil HDI (§3.4)",
+    "FIRJAN IFGF (§3.5)",
+    "ANS TABNET insurance (§3.9)",
+    "Census 2022 sanitation (§3.8 partial)",
+    "Mobility (vehicle fleet)",
+)
+
+# Cookbook §5 sources that are DEFERRED to v0.2 — extractors not yet built
+COOKBOOK_SOURCES_DEFERRED = (
+    "ANATEL broadband (§3.6) — needed for CUDS Technology dimension",
+    "RAIS employment (§3.7) — needed for CUDS Economy/Workforce dimension",
+    "SNIS sanitation proper (§3.8) — Census 2022 is a partial proxy",
+    "SIOPS health spending (§3.10) — needed for CUDS Governance dimension",
+    "International comparators (§3.11) — WHO/World Bank/UNDP",
+    "CUDS composite + dimension scores (§6) — blocked by missing sources above",
+)
 
 # Namespace assignment rules — substring match against table_name (lowercased).
 # Order matters: first match wins. Falls through to "source_tables".
@@ -153,6 +183,237 @@ def _resolve_hf_token(explicit: str | None = None) -> str | None:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
+
+def derive_municipal_health_panel(
+    conn: "duckdb.DuckDBPyConnection",
+    working_dir: Path,
+    *,
+    compression_level: int = 6,
+) -> dict[str, Any]:
+    """Derive the canonical panel/municipal_health.parquet (cookbook §5).
+
+    The ICSKG-BR Technical Cookbook v1.0 §5 (Merge Pipeline) specifies that
+    the final unified panel — referenced in code as
+    `panel/municipal_health.parquet` and in the cookbook as
+    `icskg_br_unified_panel.parquet` — is the LEFT JOIN of all source tables
+    onto a 5,570 × 9 = 50,130-row municipality-year spine.
+
+    The canonical NAS DuckDB does not yet contain this table as a base table;
+    it must be derived at publish time from the source tables.  This function
+    runs the cookbook §5 merge in DuckDB SQL and writes the result to
+    `{working_dir}/panel/municipal_health.parquet`.
+
+    Cookbook source coverage (v0.1.0):
+        See COOKBOOK_SOURCES_PRESENT and COOKBOOK_SOURCES_DEFERRED at the
+        top of this module.  v0.1.0 ships the LCoGS-side panel; ANATEL,
+        RAIS, SNIS-proper, SIOPS, and the international comparators are
+        deferred to v0.2.0 because their extractors are not yet built.
+
+    Returns
+    -------
+    dict
+        A `tables_out`-compatible entry: ``{namespace, table, parquet_path,
+        row_count, column_count, schema, sha256, size_bytes}``.  Append this
+        to the manifest's tables list so the fetcher's verify step picks it
+        up automatically.
+
+    Raises
+    ------
+    RuntimeError
+        If the resulting row count != 50,130 (publication-blocking
+        invariant from cookbook §5.2 Validate step).
+    """
+    panel_dir = working_dir / "panel"
+    panel_dir.mkdir(parents=True, exist_ok=True)
+    parquet_path = panel_dir / "municipal_health.parquet"
+
+    # Cookbook §5.1 merge order, implemented in DuckDB SQL.
+    # SIH and SAO workforce are MONTHLY in the source DuckDB; we aggregate to
+    # year-level (sum for counts, avg for rates) so the panel stays one row
+    # per municipality-year.  Time-invariant tables (sanitation, mobility,
+    # municipality metadata) are broadcast across years via the spine.
+    panel_sql = """
+    WITH spine AS (
+      -- §5.1 step 1: "Start: IBGE population master (5,570 × 9 years =
+      -- 50,130 municipality-year rows)".  The cookbook explicitly defines
+      -- the population table as the canonical spine.  Using municipalities
+      -- here introduces a phantom 5,571st row (likely an aggregate or
+      -- centro de povoado) and produces 50,139 rows — fails the invariant.
+      SELECT
+        p.cod_ibge,
+        m.cod_ibge_6,
+        p.year
+      FROM population p
+      LEFT JOIN municipalities m USING (cod_ibge)
+    ),
+    sih_year AS (
+      -- §5.1 step 2: SIH surgical aggregates (cookbook says cod_ibge_6, year)
+      -- Source is monthly; aggregate to year level.
+      SELECT
+        cod_ibge_6,
+        year,
+        SUM(total_procedures) AS sih_procedures_year,
+        SUM(deaths) AS sih_deaths_year,
+        AVG(pomr_pct) AS sih_pomr_pct,
+        AVG(avg_cost_brl) AS sih_avg_cost_brl,
+        AVG(avg_days) AS sih_avg_days
+      FROM sih_municipal
+      GROUP BY cod_ibge_6, year
+    ),
+    sao_year AS (
+      -- §5.1 step 3: CNES SAO/bellwether (cookbook says cod_ibge_6, year)
+      -- Source is monthly; aggregate to year level.
+      SELECT
+        cod_ibge_6,
+        year,
+        AVG(total_sao) AS sao_total_year,
+        AVG(surgeons) AS sao_surgeons_year,
+        AVG(anesthesiologists) AS sao_anesth_year,
+        AVG(obstetricians) AS sao_obstetricians_year,
+        AVG(sao_per_100k) AS sao_per_100k_year
+      FROM sao_workforce
+      GROUP BY cod_ibge_6, year
+    )
+    SELECT
+      -- Spine identity columns (join keys)
+      s.cod_ibge,
+      s.cod_ibge_6,
+      s.year,
+      -- Municipality metadata (broadcast time-invariant)
+      m.nome AS municipality_name,
+      m.uf,
+      m.regiao AS macro_region,
+      m.lat,
+      m.lon,
+      m.capital,
+      m.area_km2,
+      m.pop_density AS population_density_2022,
+      -- §5.1 step 1 + IBGE population (per-year)
+      p.population,
+      -- §5.1 step 4: IBGE GDP
+      g.gdp_total_brl_1000,
+      g.gdp_per_capita_brl,
+      -- §5.1 step 6: FIRJAN IFGF (joined via cod_ibge_6)
+      f.ifgf_geral,
+      f.ifgf_autonomia,
+      f.ifgf_gastos_pessoal,
+      f.ifgf_liquidez,
+      f.ifgf_investimentos,
+      -- §5.1 step 5: Atlas Brasil HDI (cookbook says time-invariant; we
+      -- have a time-varying idhm table, use it directly)
+      h.idhm,
+      h.idhm_educacao,
+      h.idhm_longevidade,
+      h.idhm_renda,
+      -- §5.1 step 10: ANS insurance (joined via cod_ibge_6)
+      a.benef_medica,
+      a.cobertura_medica_pct,
+      a.sus_dependence_pct AS SUS_dependence,
+      -- Census 2022 sanitation (broadcast time-invariant; partial proxy
+      -- for the cookbook's §5.1 step 9 SNIS data which is deferred to v0.2)
+      san.esgoto_pct,
+      san.agua_pct,
+      -- Mobility (broadcast time-invariant)
+      mb.total_veiculos AS mobility_veiculos,
+      mb.veiculos_per_1000,
+      -- §5.1 step 2: SIH surgical aggregates (joined via cod_ibge_6, year)
+      sh.sih_procedures_year,
+      sh.sih_deaths_year,
+      sh.sih_pomr_pct,
+      sh.sih_avg_cost_brl,
+      sh.sih_avg_days,
+      -- §5.1 step 3: CNES SAO workforce (joined via cod_ibge_6, year)
+      sw.sao_total_year,
+      sw.sao_surgeons_year,
+      sw.sao_anesth_year,
+      sw.sao_obstetricians_year,
+      sw.sao_per_100k_year,
+      -- §5.1 step 12 derived columns (already computed in v_lcogs_panel)
+      lc.dist_nearest_bellwether_km AS bellwether_access_km,
+      lc.lcogs1_access,
+      lc.bellwether_count_50km,
+      lc.bellwether_count_100km,
+      lc.lcogs2_sao_density AS SAO_density,
+      lc.lcogs2_meets_target,
+      lc.lcogs3_surg_volume_100k AS surgical_volume,
+      lc.lcogs3_meets_target,
+      lc.lcogs4_pomr AS POMR
+    FROM spine s
+    LEFT JOIN municipalities m USING (cod_ibge)
+    LEFT JOIN population p USING (cod_ibge, year)
+    LEFT JOIN gdp g USING (cod_ibge, year)
+    LEFT JOIN ifgf f ON f.cod_ibge_6 = s.cod_ibge_6 AND f.year = s.year
+    LEFT JOIN idhm h USING (cod_ibge, year)
+    LEFT JOIN ans_cobertura a ON a.cod_ibge_6 = s.cod_ibge_6 AND a.year = s.year
+    LEFT JOIN censo2022_saneamento san USING (cod_ibge)
+    LEFT JOIN mobility mb ON mb.cod_ibge_6 = s.cod_ibge_6
+    LEFT JOIN sih_year sh ON sh.cod_ibge_6 = s.cod_ibge_6 AND sh.year = s.year
+    LEFT JOIN sao_year sw ON sw.cod_ibge_6 = s.cod_ibge_6 AND sw.year = s.year
+    LEFT JOIN v_lcogs_panel lc USING (cod_ibge, year)
+    ORDER BY s.cod_ibge, s.year
+    """
+
+    escaped_path = str(parquet_path).replace("'", "''")
+    copy_sql = (
+        "COPY (%s) TO '%s' "
+        "(FORMAT PARQUET, COMPRESSION ZSTD, "
+        "COMPRESSION_LEVEL %d, ROW_GROUP_SIZE 100000)"
+        % (panel_sql, escaped_path, compression_level)
+    )
+    conn.execute(copy_sql)
+
+    # Cookbook §5.2 Validate step: assert exact row count + no duplicates
+    row_count = conn.execute(
+        "SELECT COUNT(*) FROM read_parquet('%s')" % escaped_path
+    ).fetchone()[0]
+    if row_count != EXPECTED_PANEL_ROWS:
+        raise RuntimeError(
+            "municipal_health row count invariant violated: got %d, expected %d. "
+            "Cookbook §5.2 requires exactly %d rows (5,570 mun × 9 years). "
+            "Either the spine is wrong or a join introduced duplicates."
+            % (row_count, EXPECTED_PANEL_ROWS, EXPECTED_PANEL_ROWS)
+        )
+    dup_count = conn.execute(
+        "SELECT COUNT(*) FROM ("
+        "  SELECT cod_ibge, year, COUNT(*) AS n "
+        "  FROM read_parquet('%s') "
+        "  GROUP BY cod_ibge, year HAVING n > 1)"
+        % escaped_path
+    ).fetchone()[0]
+    if dup_count > 0:
+        raise RuntimeError(
+            "municipal_health has %d duplicate (cod_ibge, year) pairs — "
+            "cookbook §5.2 forbids duplicates" % dup_count
+        )
+
+    schema_rows = conn.execute(
+        "DESCRIBE SELECT * FROM read_parquet('%s')" % escaped_path
+    ).fetchall()
+    schema = [
+        {"name": r[0], "type": r[1], "nullable": True}
+        for r in schema_rows
+    ]
+
+    sha256 = _sha256_file(parquet_path)
+    size_bytes = parquet_path.stat().st_size
+
+    logger.info(
+        "  ✓ %-40s [%s] %d rows, %d cols, %.2f KB (cookbook §5)",
+        "municipal_health", "panel", row_count, len(schema), size_bytes / 1024,
+    )
+
+    return {
+        "namespace": "panel",
+        "table": "municipal_health",
+        "parquet_path": "panel/municipal_health.parquet",
+        "row_count": int(row_count),
+        "column_count": len(schema),
+        "schema": schema,
+        "sha256": sha256,
+        "size_bytes": size_bytes,
+        "derived_from": "cookbook §5 merge pipeline",
+    }
 
 
 def assign_namespace(table_name: str) -> str:
@@ -299,6 +560,35 @@ def duckdb_to_parquet_tree(
                 "  ✓ %-40s [%s] %d rows, %d cols, %.2f KB",
                 table_name, namespace, row_count, len(schema), size_bytes / 1024,
             )
+
+        # Derive the canonical municipal_health panel (cookbook §5).
+        # This is computed from the base tables we just exported, not stored
+        # in the source DuckDB.  See derive_municipal_health_panel docstring.
+        # Only derive if the required source tables are present — if any are
+        # missing, log a warning and skip rather than crashing the publish.
+        required_for_panel = {
+            "municipalities", "population", "gdp", "ifgf", "idhm",
+            "ans_cobertura", "censo2022_saneamento", "mobility",
+            "sih_municipal", "sao_workforce", "v_lcogs_panel",
+        }
+        present_table_names = {t["table"] for t in tables_out}
+        missing = required_for_panel - present_table_names
+        if missing:
+            logger.warning(
+                "Skipping municipal_health derivation — missing source tables: %s",
+                sorted(missing),
+            )
+        else:
+            try:
+                panel_entry = derive_municipal_health_panel(
+                    conn, working_dir, compression_level=compression_level,
+                )
+                tables_out.append(panel_entry)
+            except Exception as exc:  # noqa: BLE001
+                logger.error(
+                    "Failed to derive municipal_health panel: %s", exc,
+                )
+                raise
     finally:
         conn.close()
 
@@ -420,6 +710,27 @@ def generate_dataset_card(manifest: dict[str, Any]) -> str:
         % (manifest["source_duckdb"]["name"], manifest["source_duckdb"]["sha256"][:16]),
         "- Compression: `%s` level `%d`"
         % (manifest["compression"]["codec"], manifest["compression"]["level"]),
+        "",
+        "## Cookbook scope (v0.1.0)",
+        "",
+        "This release implements the **LCoGS-side** of the ICSKG-BR Technical",
+        "Cookbook v1.0 (March 2026).  The canonical `panel/municipal_health.parquet`",
+        "is derived at publish time from the source tables via the cookbook §5",
+        "merge pipeline (50,130 rows = 5,570 mun × 9 years, 49 columns).",
+        "",
+        "**Cookbook §3 sources INCLUDED in v0.1.0:**",
+        "",
+        *("- " + s for s in COOKBOOK_SOURCES_PRESENT),
+        "",
+        "**DEFERRED to v0.2.0** (extractors not yet built — see project phase 12):",
+        "",
+        *("- " + s for s in COOKBOOK_SOURCES_DEFERRED),
+        "",
+        "The v0.2.0 release will add the missing 5 extractors and the cookbook §6",
+        "CUDS composite (PCA weighting + geometric mean aggregation), and will",
+        "move the `municipal_health` derivation into the build pipeline so it's",
+        "stored as a base table in the source DuckDB instead of being computed",
+        "at publish time.",
         "",
         "## Totals",
         "",
@@ -586,10 +897,28 @@ def publish_to_hf(
         logger.info("Tag created: %s", dataset_version)
     except HfHubHTTPError as exc:
         if "already exists" in str(exc).lower() or "409" in str(exc):
+            # Tag already exists at the OLD HEAD.  Force-move it to the new
+            # HEAD on main so the revision pointer matches what we just
+            # uploaded.  Without this, the fetcher silently downloads the
+            # stale revision and can hit "missing file" errors that look
+            # like the upload failed when it actually succeeded.
             logger.warning(
-                "Tag %s already exists on %s — skipping create_tag (idempotent)",
+                "Tag %s already exists on %s — deleting and re-creating "
+                "at current main HEAD (force-update for re-publish)",
                 dataset_version, repo_id,
             )
+            api.delete_tag(
+                repo_id=repo_id,
+                tag=dataset_version,
+                repo_type="dataset",
+            )
+            api.create_tag(
+                repo_id=repo_id,
+                tag=dataset_version,
+                repo_type="dataset",
+                revision="main",
+            )
+            logger.info("Tag re-created: %s -> main HEAD", dataset_version)
         else:
             raise
 
