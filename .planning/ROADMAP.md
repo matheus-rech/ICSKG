@@ -210,6 +210,27 @@ Plans:
 - [x] 10-01-PLAN.md -- Publication figures (CUDS temporal trend, regression forest plot) and 8+ tables with CIs and BRL+USD
 - [ ] 10-02-PLAN.md -- STROBE/RECORD checklists, data dictionary, and Zenodo release preparation
 
+### Phase 11: CI Reproducibility & HF Data Layer (milestone v1.1)
+**Goal**: ICSKG-BR builds reproducibly on any github-hosted runner or fresh clone with no NAS access. Canonical processed data lives on a versioned HuggingFace Dataset (`matheus-rech/icskg-br-processed`) and CI fetches it via a `--from-hf` flag. Fail-loud guards prevent any future "phantom database" CI run. End-to-end replication is documented and self-tested. The Build Database workflow has its first-ever successful run in project history.
+**Depends on**: Phase 10 (no algorithmic dependency, only that the data layer is stable)
+**Requirements**: REPL-01, REPL-02, REPL-03, REPL-04, REPL-05
+**Success Criteria** (what must be TRUE):
+  1. `matheus-rech/icskg-br-processed` exists on HuggingFace as a private dataset, tagged `v0.1.0`, with a parquet tree (panel/, dimensions/, lcogs/, source_tables/) and a manifest.json containing per-file SHA256 + row counts
+  2. `python -m database.build_database_v3 --from-hf v0.1.0` succeeds end-to-end on a fresh clone with no NAS access — tested via `docs/REPLICATION.test.sh`
+  3. `python -m database.build_database_v3 --processed-dir /any/empty/dir` raises `RuntimeError("Refusing to build a phantom database")` instead of the cryptic `KeyError: 'variable'` — fail-loud invariant enforced in two layers (build_database_v3.py main + impute_ifgf.py generate_missingness_report)
+  4. The `Build Database` workflow run on `meta` succeeds on a github-hosted runner using only `secrets.HF_TOKEN` (read-scoped) — first successful run in project history. All `actions/checkout@v4` and `actions/upload-artifact@v4` references are bumped to `@v5` (Node 24 compatible)
+  5. A new `Build Database (smoke)` workflow runs on every push and PR, completes in <5 min using the committed `tests/fixtures/processed_smoke/` fixture, and verifies both the happy path and the fail-loud guard
+  6. A Zenodo Sandbox deposition exists for `v0.1.0` mirrored from HF via `scripts/mirror_to_zenodo.py`, proving the production deposit path works end-to-end. `.zenodo.json` is real (no `[Author Name]` / `[Institution]` placeholders) and ready for production publish at BMJ acceptance
+  7. `docs/REPLICATION.md` is a complete fresh-clone walkthrough that a BMJ peer reviewer can follow to reproduce the build in <15 minutes with only Python 3.12 + git + an HF token
+**Plans**: 5 plans
+
+Plans:
+- [ ] 11-01-PLAN.md — HF dataset bootstrap: scripts/publish_to_hf.py + matheus-rech/icskg-br-processed@v0.1.0 publish
+- [ ] 11-02-PLAN.md — Fetcher + fail-loud guards: database/fetch_processed_data.py, --from-hf flag in build_database_v3, schema-pin in impute_ifgf, smoke fixture
+- [ ] 11-03-PLAN.md — CI workflow rewrite: build-database.yml HF-pull + Node 20→24 bump + new build-database-smoke.yml on push/PR
+- [ ] 11-04-PLAN.md — Replication docs: docs/REPLICATION.md + docs/REPLICATION.test.sh + README Reproducibility section
+- [ ] 11-05-PLAN.md — Zenodo mirror: scripts/mirror_to_zenodo.py + .zenodo.json finalization + sandbox-validated DOI path
+
 ## Progress
 
 **Execution Order:**
@@ -233,3 +254,4 @@ Note: Phases 2 and 3 are independent and can be developed in parallel, but both 
 | 10. Publication Package | 0/2 | Complete    | 2026-04-02 |
 | 10. Publication Package | 1/2 | In progress | - |
 | 10. Publication Package | 1/2 | In Progress|  |
+| 11. CI Reproducibility & HF Data Layer | 0/5 | Planned | - |
