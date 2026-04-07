@@ -17,3 +17,12 @@ db_dir: "database"
 
 # Output directory for analysis figures and tables
 output_dir: "analysis/results"
+
+# HuggingFace Dataset configuration (Phase 11 — canonical processed-data store)
+# CI and replicators fetch processed data from here instead of NAS.
+# The HF_TOKEN env var is read at runtime (huggingface-cli login OR
+# `export HF_TOKEN=...`). For private datasets, a read-scoped token suffices.
+huggingface:
+  dataset_repo: "matheus-rech/icskg-br-processed"
+  dataset_revision: "v0.1.0"
+  token_env_var: "HF_TOKEN"

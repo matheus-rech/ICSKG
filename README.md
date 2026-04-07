@@ -7,6 +7,22 @@ across all 5 570 Brazilian municipalities for the period 2013–2024.
 
 ---
 
+## Reproducibility
+
+ICSKG-BR's processed data is published as a versioned HuggingFace Dataset:
+[`matheus-rech/icskg-br-processed`](https://huggingface.co/datasets/matheus-rech/icskg-br-processed).
+
+| Item | Value |
+|---|---|
+| Current data revision | `v0.1.0` |
+| Visibility | Private during BMJ Global Health pre-submission, then CC-BY-4.0 public |
+| Format | Parquet tree (`panel/`, `dimensions/`, `lcogs/`, `source_tables/`) + `manifest.json` |
+| DOI | _Pending Zenodo mirror at submission_ |
+
+The full step-by-step replication walkthrough lives at `docs/REPLICATION.md` (added in Phase 11.4).
+
+---
+
 ## Repository structure
 
 ```
