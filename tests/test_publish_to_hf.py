@@ -300,6 +300,7 @@ def test_publish_to_hf_dry_run_skips_upload(tmp_path):
     original_import = __import__
 
     def guarded_import(name, *args, **kwargs):
+        """Fail if dry-run reaches the lazy HF import path."""
         if name == "huggingface_hub" or name.startswith("huggingface_hub."):
             raise AssertionError("dry-run must not import huggingface_hub")
         return original_import(name, *args, **kwargs)

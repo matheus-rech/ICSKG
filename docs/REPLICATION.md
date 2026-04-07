@@ -59,7 +59,9 @@ That's it. The resulting `database/icskg_br.sqlite` contains the same panel that
 > **Why do some local code paths still use 5,571 rows/year?**  
 > The source-build scaffold and `municipality_lookup` table retain the full
 > 5,571-row IBGE reference CSV checked into the repo, which includes
-> `2605459` / Fernando de Noronha. That is why `database.build_database_v3`
+> `2605459` / Fernando de Noronha. The published HF release excludes that row
+> because it is an IBGE district-level reference entry rather than one of the
+> 5,570 municipalities in the release panel. That is why `database.build_database_v3`
 > smoke tests assert 11,142 rows for a two-year source build. The published HF
 > release panel is the filtered 5,570-municipality artifact, so its canonical
 > verification invariant remains 50,130 rows.
