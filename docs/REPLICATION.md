@@ -1,6 +1,6 @@
 # Reproducing the ICSKG-BR build
 
-This walkthrough takes a fresh git clone of [matheus-rech/ICSKG](https://github.com/matheus-rech/ICSKG) and produces a working `database/icskg_br.sqlite` containing the full 50,130-row municipality-year panel in **under 15 minutes** with no NAS access. It is the canonical replication path for **BMJ Global Health peer reviewers** and any researcher who wants to verify the published dataset.
+This walkthrough takes a fresh git clone of [matheus-rech/ICSKG](https://github.com/matheus-rech/ICSKG) and produces a working `database/icskg_br.sqlite` containing the full 50,139-row municipality-year panel (5,571 municipalities per year) in **under 15 minutes** with no NAS access. It is the canonical replication path for **BMJ Global Health peer reviewers** and any researcher who wants to verify the published dataset.
 
 If you find any step that doesn't work as documented, please [open an issue](https://github.com/matheus-rech/ICSKG/issues/new) — and run `bash docs/REPLICATION.test.sh` first to capture the exact failing step.
 
