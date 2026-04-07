@@ -230,3 +230,95 @@ class TestMissingnessReport:
             assert all(
                 sanit_rows["missingness_mechanism"] == "cross_sectional_2022"
             ), "Sanitation should be cross_sectional_2022"
+
+
+# ---------------------------------------------------------------------------
+# Phase 11 fail-loud guard tests
+# ---------------------------------------------------------------------------
+
+
+class TestFailLoudGuards:
+    """Phase 11 — verify the cryptic KeyError 'variable' failure mode is unreachable.
+
+    The original CI failure (run 24054805442) crashed in
+    generate_missingness_report at `report.sort_values(["variable", "year"])`
+    with `KeyError: 'variable'` because `pd.DataFrame([])` produced a
+    DataFrame with zero columns. Phase 11 fixes this in two layers:
+
+    1. A loud ValueError BEFORE the empty DataFrame is built (catches the
+       root cause and points at the upstream ETL failure).
+    2. A schema-pinned `pd.DataFrame(rows, columns=REPORT_COLUMNS)` that
+       produces a valid empty DataFrame even if the guard is somehow bypassed
+       (defense-in-depth).
+
+    These tests verify both layers.
+    """
+
+    def test_metadata_only_panel_raises_value_error(self) -> None:
+        """The loud guard catches a metadata-only panel before any side effects."""
+        from database.impute_ifgf import generate_missingness_report
+
+        # cod_ibge + year only — no value columns at all
+        panel = pd.DataFrame({
+            "cod_ibge": ["3550308", "2611606"],
+            "year": [2023, 2023],
+        })
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir) / "should_not_exist.csv"
+            with pytest.raises(ValueError, match="panel has no value columns"):
+                generate_missingness_report(panel, out_path)
+            # Confirm no side-effect file was written
+            assert not out_path.exists()
+
+    def test_fully_metadata_panel_lists_columns_in_error(self) -> None:
+        """The error message must list the metadata columns so the user can
+        diagnose the upstream ETL failure quickly."""
+        from database.impute_ifgf import generate_missingness_report
+
+        panel = pd.DataFrame({
+            "cod_ibge": ["3550308"],
+            "year": [2023],
+            "uf": ["SP"],  # also a metadata col per METADATA_COLS
+        })
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir) / "should_not_exist.csv"
+            with pytest.raises(ValueError) as exc_info:
+                generate_missingness_report(panel, out_path)
+            msg = str(exc_info.value)
+            assert "cod_ibge" in msg
+            assert "year" in msg
+            assert "uf" in msg
+            assert "phantom" in msg.lower()
+            assert "--from-hf" in msg
+
+    def test_report_columns_constant_is_pinned(self) -> None:
+        """The REPORT_COLUMNS constant must contain the exact 8 expected columns
+        in the exact order needed for sort_values to work."""
+        from database.impute_ifgf import REPORT_COLUMNS
+
+        assert REPORT_COLUMNS == [
+            "variable", "year", "n_total", "n_observed", "n_missing",
+            "pct_missing", "missingness_mechanism", "handling_method",
+        ]
+
+    def test_minimal_valid_panel_writes_pinned_schema(self) -> None:
+        """A panel with one value column writes a CSV whose columns match
+        REPORT_COLUMNS exactly — verifying the schema-pin defense-in-depth."""
+        from database.impute_ifgf import (
+            generate_missingness_report, REPORT_COLUMNS,
+        )
+
+        panel = pd.DataFrame({
+            "cod_ibge": ["3550308", "3550308"],
+            "year": [2022, 2023],
+            "ifgf_geral": [0.65, 0.67],
+        })
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir) / "missingness.csv"
+            generate_missingness_report(panel, out_path)
+            df = pd.read_csv(out_path, keep_default_na=False)
+            assert list(df.columns) == REPORT_COLUMNS
+            # 1 value col × 2 years = 2 rows
+            assert len(df) == 2
+            assert set(df["variable"]) == {"ifgf_geral"}
+            assert sorted(df["year"].astype(int).tolist()) == [2022, 2023]
