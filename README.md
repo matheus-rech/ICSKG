@@ -7,6 +7,57 @@ across all 5 570 Brazilian municipalities for the period 2013–2024.
 
 ---
 
+## Reproducibility
+
+ICSKG-BR is a fully reproducible study. Anyone with Python 3.12, git, and a HuggingFace read token can rebuild the published database from a fresh clone in **under 15 minutes** with no NAS access and no special infrastructure.
+
+**Canonical processed data:** [`mmrech/icskg-br-processed`](https://huggingface.co/datasets/mmrech/icskg-br-processed) on HuggingFace Datasets, version-pinned per release.
+
+| Item | Value |
+|---|---|
+| Current data revision | `v0.1.0` |
+| Visibility | Private during BMJ Global Health pre-submission, then CC-BY-4.0 public |
+| Format | Parquet tree (`panel/`, `dimensions/`, `lcogs/`, `source_tables/`) + `manifest.json` with per-file SHA256 |
+| Total size | ~150 MB compressed |
+| Published HF panel invariant | 5,570 municipalities × 9 years = 50,130 rows in `panel/municipal_health.parquet` |
+| Local scaffold/reference invariant | 5,571 IBGE rows per year (the source-build scaffold and `municipality_lookup` retain the extra `2605459` / Fernando de Noronha reference row), so the 2022–2023 smoke build asserts 11,142 scaffold rows |
+| DOI (data) | _Will be minted via `scripts/mirror_to_zenodo.py` at BMJ acceptance — sandbox-validated_ |
+| DOI (code) | _Pending GitHub release at submission_ |
+
+> **Note for BMJ peer reviewers:** The Zenodo DOI will be minted at acceptance. Until then, cite the HuggingFace Dataset revision `v0.1.0` directly.
+
+### Quick replication
+
+```bash
+git clone https://github.com/matheus-rech/ICSKG.git && cd ICSKG
+uv sync
+export HF_TOKEN=hf_...   # from https://huggingface.co/settings/tokens
+python -m database.fetch_processed_data --revision v0.1.0 --to database/icskg_br.sqlite
+sqlite3 database/icskg_br.sqlite "SELECT COUNT(*) FROM municipal_health"
+# Expected: 50130
+```
+
+The published HuggingFace panel is a 50,130-row municipality-year release
+artifact (5,570 municipalities × 2015–2023). The local from-source build path
+still seeds the full 5,571-row IBGE reference list, so smoke tests that build a
+two-year scaffold from source correctly assert 11,142 rows before any release
+time filtering.
+
+For the full step-by-step walkthrough (prerequisites, troubleshooting, expected output, and analysis reproduction), see [`docs/REPLICATION.md`](docs/REPLICATION.md).
+
+For maintainers: [`docs/REPLICATION.test.sh`](docs/REPLICATION.test.sh) runs the end-to-end replication path against a fresh clone — run this before every release and before sending the dataset to BMJ reviewers.
+
+### Continuous integration
+
+Two GitHub Actions workflows verify reproducibility on every change:
+
+| Workflow | Trigger | Duration | Purpose |
+|---|---|---|---|
+| **Build Database (smoke)** | Every push to `meta`/`feature/**`, every PR to `meta` | <5 min | Runs the full local pipeline against the committed `tests/fixtures/processed_smoke/` fixture (50 KB, 5 mun × 2 years × 11 sources) and verifies the fail-loud guard fires on empty input. No secrets required. |
+| **Build Database** | Manual `workflow_dispatch` | ~10 min | Fetches the pre-built database from HuggingFace at the chosen revision, verifies SHA256s + 50,130-row invariant, materializes a SQLite, and uploads it as an artifact. Requires `HF_TOKEN` repo secret. |
+
+---
+
 ## Repository structure
 
 ```

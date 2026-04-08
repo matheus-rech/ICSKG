@@ -69,6 +69,15 @@ METADATA_COLS: set[str] = {
     "ifgf_is_imputed",
 }
 
+# Schema for the missingness report DataFrame — pinned so an empty `rows`
+# list still produces a DataFrame with the expected columns. This is
+# defense-in-depth against the cryptic `KeyError: 'variable'` failure mode
+# (Phase 11 fix).
+REPORT_COLUMNS: list[str] = [
+    "variable", "year", "n_total", "n_observed", "n_missing",
+    "pct_missing", "missingness_mechanism", "handling_method",
+]
+
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -232,6 +241,22 @@ def generate_missingness_report(
     value_cols = [
         c for c in panel.columns if c not in METADATA_COLS
     ]
+
+    # Phase 11 fail-loud guard: refuse to write a phantom missingness report.
+    # ICSKG-BR requires real source data (5,570 mun × 9 years × 9 dimensions);
+    # a metadata-only panel means upstream ETL silently produced nothing,
+    # which is a publication-blocking failure that must surface immediately.
+    if not value_cols:
+        raise ValueError(
+            "generate_missingness_report: panel has no value columns "
+            "(panel has %d rows, columns: %s). "
+            "This indicates an upstream ETL failure -- refusing to write "
+            "a phantom missingness report. Check that data_sources/processed/ "
+            "is populated, or fetch from HuggingFace via "
+            "`python -m database.fetch_processed_data --to <db_path>`."
+            % (len(panel), sorted(panel.columns))
+        )
+
     years = sorted(panel["year"].unique())
 
     rows: list[dict] = []
@@ -257,7 +282,13 @@ def generate_missingness_report(
                 "handling_method": handling,
             })
 
-    report = pd.DataFrame(rows)
+    # Phase 11 schema-pin: defense-in-depth against the cryptic
+    # KeyError: 'variable' that crashed CI on every run pre-Phase 11.
+    # Even if rows is empty for any reason (which the guard above would
+    # already catch), pd.DataFrame(rows, columns=REPORT_COLUMNS) ensures
+    # the DataFrame has the expected schema and sort_values cannot raise
+    # KeyError on a missing column.
+    report = pd.DataFrame(rows, columns=REPORT_COLUMNS)
     report = report.sort_values(["variable", "year"]).reset_index(drop=True)
     report.to_csv(output_path, index=False)
 

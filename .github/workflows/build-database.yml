@@ -1,33 +1,44 @@
-# ICSKG-BR Database Build — Manual Trigger
-# ===========================================
-# Runs the Phase 4 pipeline: assemble panel → impute IFGF → persist SQLite.
-# Triggered manually via the GitHub Actions "Run workflow" button.
+# ICSKG-BR Database — Fetch & Verify (manual trigger)
+# =====================================================
+# Phase 11 reproducibility refactor: this workflow no longer rebuilds the
+# database from raw DATASUS sources (which is impossible on github-hosted
+# runners since data_sources/processed/ is gitignored and the raw archive
+# is 100+ GB on the user's NAS). Instead it FETCHES the canonical pre-built
+# database from a versioned HuggingFace Dataset, verifies its integrity
+# (manifest SHA256s + row count invariant), materializes a SQLite, and
+# uploads it as a workflow artifact.
+#
+# The actual local build pipeline (assemble_panel → impute_ifgf → build_database)
+# still lives in `database/build_database_v3.py` and is exercised on every
+# push/PR by `build-database-smoke.yml` against the committed fixture.
+#
+# Security: ALL workflow inputs flow through `env:` blocks before being
+# referenced in `run:` scripts. This prevents shell injection from any
+# user-controlled value (workflow inputs, ref names, etc.). See
+# https://github.blog/security/vulnerability-research/how-to-catch-github-actions-workflow-injections-before-attackers-do/
 
 name: Build Database
 
 on:
   workflow_dispatch:
     inputs:
-      start_year:
-        description: "Start year (inclusive)"
+      hf_revision:
+        description: "HuggingFace dataset revision to fetch (e.g., v0.1.0 or main)"
         required: false
-        default: "2015"
+        default: "v0.1.0"
         type: string
-      end_year:
-        description: "End year (inclusive)"
+      hf_repo_id:
+        description: "HuggingFace dataset repo id"
         required: false
-        default: "2023"
+        default: "mmrech/icskg-br-processed"
         type: string
-      builder_version:
-        description: "Database builder version"
+      expected_rows:
+        description: "Expected row count for panel/municipal_health.parquet"
         required: false
-        default: "v3"
-        type: choice
-        options:
-          - v3
-          - v2
+        default: "50130"
+        type: string
       run_tests:
-        description: "Run pytest before building"
+        description: "Run pytest before fetching"
         required: false
         default: true
         type: boolean
@@ -35,15 +46,20 @@ on:
 permissions:
   contents: read
 
+# Avoid concurrent fetches of the same revision
+concurrency:
+  group: build-database-${{ inputs.hf_revision }}
+  cancel-in-progress: false
+
 jobs:
-  build:
-    name: Build ICSKG-BR Database (${{ inputs.builder_version }})
+  fetch-and-verify:
+    name: Fetch ICSKG-BR Database from HF
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -51,73 +67,90 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Install dependencies
+      - name: Install project
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e .
           python -m pip install dependency-groups
           pip-install-dependency-groups dev
 
-      - name: Run tests
+      - name: Run unit tests
         if: ${{ inputs.run_tests }}
-        run: |
-          python -m pytest tests/ -v --tb=short
+        run: python -m pytest tests/ -v --tb=short
 
-      - name: Build database (v3)
-        if: ${{ inputs.builder_version == 'v3' }}
-        env:
-          START_YEAR: ${{ inputs.start_year }}
-          END_YEAR: ${{ inputs.end_year }}
-        run: |
-          [[ "$START_YEAR" =~ ^[0-9]{4}$ ]] || { echo "Invalid start_year: $START_YEAR" >&2; exit 1; }
-          [[ "$END_YEAR" =~ ^[0-9]{4}$ ]] || { echo "Invalid end_year: $END_YEAR" >&2; exit 1; }
-          python -m database.build_database_v3 \
-            --processed-dir data_sources/processed \
-            --db-dir database \
-            --years "$START_YEAR" "$END_YEAR"
-
-      - name: Build database (v2)
-        if: ${{ inputs.builder_version == 'v2' }}
-        env:
-          START_YEAR: ${{ inputs.start_year }}
-          END_YEAR: ${{ inputs.end_year }}
-        run: |
-          [[ "$START_YEAR" =~ ^[0-9]{4}$ ]] || { echo "Invalid start_year: $START_YEAR" >&2; exit 1; }
-          [[ "$END_YEAR" =~ ^[0-9]{4}$ ]] || { echo "Invalid end_year: $END_YEAR" >&2; exit 1; }
-          python -m database.build_database_v2 \
-            --processed-dir data_sources/processed \
-            --db-dir database \
-            --years "$START_YEAR" "$END_YEAR"
-
-      - name: Verify build outputs (v2)
-        if: ${{ inputs.builder_version == 'v2' }}
-        run: |
-          test -f database/icskg_br.sqlite || { echo "Missing icskg_br.sqlite" >&2; exit 1; }
-          test -f database/icskg_br.duckdb || { echo "Missing icskg_br.duckdb" >&2; exit 1; }
-          test -f database/database_metadata.json || { echo "Missing database_metadata.json" >&2; exit 1; }
-
-      - name: Verify build outputs (v3)
-        if: ${{ inputs.builder_version == 'v3' }}
-        run: |
-          test -f database/icskg_br.sqlite || { echo "Missing icskg_br.sqlite (v3 build)" >&2; exit 1; }
-
-      - name: Upload database artifact (v3)
-        if: ${{ inputs.builder_version == 'v3' }}
-        uses: actions/upload-artifact@v4
+      - name: Restore HuggingFace dataset cache
+        id: hf-cache
+        uses: actions/cache@v4
         with:
-          name: icskg-br-database-v3
+          path: ~/.cache/huggingface
+          key: hf-icskg-br-processed-${{ inputs.hf_revision }}-${{ runner.os }}
+          restore-keys: |
+            hf-icskg-br-processed-${{ inputs.hf_revision }}-
+            hf-icskg-br-processed-
+
+      - name: Validate inputs
+        env:
+          HF_REVISION: ${{ inputs.hf_revision }}
+          EXPECTED_ROWS: ${{ inputs.expected_rows }}
+        run: |
+          if [ -z "$HF_REVISION" ]; then
+            echo "Empty hf_revision input" >&2
+            exit 1
+          fi
+          if ! echo "$EXPECTED_ROWS" | grep -Eq '^[0-9]+$'; then
+            echo "Invalid expected_rows: $EXPECTED_ROWS" >&2
+            exit 1
+          fi
+          echo "Will fetch revision $HF_REVISION (expecting $EXPECTED_ROWS panel rows)"
+
+      - name: Fetch processed dataset from HuggingFace
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REVISION: ${{ inputs.hf_revision }}
+          HF_REPO_ID: ${{ inputs.hf_repo_id }}
+          EXPECTED_ROWS: ${{ inputs.expected_rows }}
+        run: |
+          mkdir -p database
+          python -m database.fetch_processed_data \
+            --repo-id "$HF_REPO_ID" \
+            --revision "$HF_REVISION" \
+            --target-dir "$HOME/.cache/icskg/hf-snapshots/$HF_REVISION" \
+            --to database/icskg_br.sqlite \
+            --expected-rows "$EXPECTED_ROWS"
+
+      - name: Verify materialized SQLite
+        env:
+          EXPECTED_ROWS: ${{ inputs.expected_rows }}
+        run: |
+          if [ ! -f database/icskg_br.sqlite ]; then
+            echo "Missing icskg_br.sqlite" >&2
+            exit 1
+          fi
+          # EXPECTED_ROWS comes from env (validated above), not direct interpolation,
+          # so the inline Python script is shell-injection-safe.
+          python <<'PYCHECK'
+          import os
+          import sqlite3
+          expected = int(os.environ["EXPECTED_ROWS"])
+          conn = sqlite3.connect("database/icskg_br.sqlite")
+          n = conn.execute("SELECT COUNT(*) FROM municipal_health").fetchone()[0]
+          print(f"municipal_health rows: {n}")
+          assert n == expected, f"Expected {expected} rows, got {n}"
+          tables = [
+              r[0]
+              for r in conn.execute(
+                  "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+              ).fetchall()
+          ]
+          print(f"Tables ({len(tables)}): {tables}")
+          assert "municipal_health" in tables, "Missing municipal_health table"
+          conn.close()
+          PYCHECK
+
+      - name: Upload database artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: icskg-br-database-${{ inputs.hf_revision }}
           path: database/icskg_br.sqlite
-          retention-days: 30
-          if-no-files-found: error
-
-      - name: Upload database artifact (v2)
-        if: ${{ inputs.builder_version == 'v2' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: icskg-br-database-v2
-          path: |
-            database/icskg_br.sqlite
-            database/icskg_br.duckdb
-            database/database_metadata.json
           retention-days: 30
           if-no-files-found: error

@@ -1,0 +1,54 @@
+{
+  "_template_metadata": "ICSKG-BR Zenodo deposition template — fill in the 5 PLACEHOLDER fields below before running scripts/mirror_to_zenodo.py --sandbox",
+  "_template_what_to_fill": [
+    "creators[*].name + .orcid + .affiliation",
+    "communities (if any)",
+    "grants (CAPES/CNPq/FAPESP processing numbers)",
+    "license (default: CC-BY-4.0 — confirm)",
+    "keywords (default below — review/edit)"
+  ],
+  "title": "ICSKG-BR: Index of Cities' Smartness & Knowledge for Global Surgery — Brazil",
+  "description": "Longitudinal ecological panel dataset cross-referencing IESE Cities in Motion Index (CIMI) urban development dimensions with Lancet Commission on Global Surgery (LCoGS) indicators across all 5,570 Brazilian municipalities (2015-2023). v0.1.0 ships the LCoGS-side of the analysis (cookbook §3.1-§3.5, §3.9 sources + cookbook §5 unified panel); the full ICSKG composite (CUDS) and the remaining cookbook §3 sources (ANATEL, RAIS, SNIS, SIOPS, international comparators) are scheduled for v0.2.0. Source data is public under Brazilian Lei de Acesso à Informação (Law 12.527/2011). See https://huggingface.co/datasets/mmrech/icskg-br-processed for the canonical parquet tree.",
+  "creators": [
+    {
+      "name": "PLACEHOLDER_LAST_NAME, PLACEHOLDER_FIRST_NAME",
+      "affiliation": "PLACEHOLDER_AFFILIATION (e.g., Hospital das Clínicas FMUSP)",
+      "orcid": "PLACEHOLDER_ORCID (e.g., 0000-0000-0000-0000)"
+    }
+  ],
+  "upload_type": "dataset",
+  "license": "CC-BY-4.0",
+  "access_right": "open",
+  "language": "eng",
+  "keywords": [
+    "global surgery",
+    "Lancet Commission on Global Surgery",
+    "LCoGS",
+    "Cities in Motion Index",
+    "CIMI",
+    "Brazil",
+    "urban development",
+    "health systems research",
+    "ecological study",
+    "longitudinal panel",
+    "DATASUS",
+    "SUS",
+    "municipality-level data"
+  ],
+  "communities": [],
+  "grants": [],
+  "related_identifiers": [
+    {
+      "identifier": "https://huggingface.co/datasets/mmrech/icskg-br-processed",
+      "relation": "isDerivedFrom",
+      "resource_type": "dataset"
+    },
+    {
+      "identifier": "https://github.com/matheus-rech/ICSKG",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ],
+  "version": "v0.1.0",
+  "notes": "v0.1.0 LCoGS-only release — full CIMI composite deferred to v0.2.0. See ICSKG-BR Technical Cookbook v1.0 §3.6, §3.7, §3.8, §3.10, §3.11 for the deferred sources and §6 for the deferred CUDS construction."
+}

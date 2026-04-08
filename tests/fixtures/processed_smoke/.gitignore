@@ -1,0 +1,5 @@
+# Pipeline side-effects from running build_database_v3 against this fixture
+# These are regenerated on every build run and should not be committed.
+validation_report.json
+PANL-06-missingness.csv
+_combined_*.parquet

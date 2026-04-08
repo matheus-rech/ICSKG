@@ -1,5 +1,9 @@
 """Tests for scripts/extract_ifgf.py -- FIRJAN IFGF Excel parser."""
 
+import io
+import re
+import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -9,6 +13,67 @@ import pytest
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures"
 IFGF_FIXTURE_PATH = FIXTURE_DIR / "ifgf_sample.xlsx"
+
+# Fixed deterministic timestamp — openpyxl embeds creation/modified times in
+# docProps/core.xml inside the .xlsx zip, and Python's zipfile stamps every
+# entry with datetime.now() by default.  Both cause the fixture to drift on
+# every test run and show up as a dirty working tree.  We canonicalize both
+# via _write_deterministic_xlsx below.  Same class of bug as c019617 fixed
+# for tests/fixtures/processed_smoke/manifest.json.
+FIXED_FIXTURE_GENERATED_AT = datetime(2026, 4, 7, 0, 0, 0, tzinfo=timezone.utc)
+
+
+def _write_deterministic_xlsx(df: pd.DataFrame, path: Path,
+                               fixed_dt: datetime) -> None:
+    """Write ``df`` to ``path`` as a byte-deterministic .xlsx.
+
+    openpyxl + zipfile have two sources of nondeterminism we have to tame:
+
+    1. openpyxl overrides ``workbook.properties.modified`` to ``datetime.now()``
+       at save time, ignoring whatever we set on the property beforehand.
+    2. Python's ``zipfile`` stamps each ``ZipInfo.date_time`` with the current
+       wall clock unless explicitly set.
+
+    Strategy: write via pandas/openpyxl into an in-memory buffer, then rewrite
+    the zip with (a) ``dcterms:modified`` regex-patched in ``docProps/core.xml``
+    and (b) every ``ZipInfo.date_time`` forced to ``fixed_dt``.  Rewriting the
+    archive is cheap (<10 files) and produces byte-identical output across runs.
+    """
+    fixed_iso = fixed_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    fixed_dos = (
+        fixed_dt.year, fixed_dt.month, fixed_dt.day,
+        fixed_dt.hour, fixed_dt.minute, fixed_dt.second,
+    )
+
+    # Step 1 — write via openpyxl into a BytesIO buffer.
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False)
+        writer.book.properties.created = fixed_dt
+        writer.book.properties.creator = "icskg-br-test-fixture"
+        writer.book.properties.lastModifiedBy = "icskg-br-test-fixture"
+
+    # Step 2 — read entries back, canonicalize core.xml, rewrite with fixed
+    # zip timestamps.  namelist() order is preserved so the central directory
+    # layout stays stable.
+    buf.seek(0)
+    with zipfile.ZipFile(buf, "r") as src:
+        names = src.namelist()
+        contents = {name: src.read(name) for name in names}
+
+    core_xml = contents["docProps/core.xml"].decode("utf-8")
+    core_xml = re.sub(
+        r"(<dcterms:modified[^>]*>)[^<]*(</dcterms:modified>)",
+        rf"\g<1>{fixed_iso}\g<2>",
+        core_xml,
+    )
+    contents["docProps/core.xml"] = core_xml.encode("utf-8")
+
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as dst:
+        for name in names:
+            info = zipfile.ZipInfo(filename=name, date_time=fixed_dos)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            dst.writestr(info, contents[name])
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +129,7 @@ def create_ifgf_fixture():
          "IFGF_EL": np.nan, "IFGF_SA": np.nan},
     ]
     df = pd.DataFrame(rows)
-    df.to_excel(IFGF_FIXTURE_PATH, index=False, engine="openpyxl")
+    _write_deterministic_xlsx(df, IFGF_FIXTURE_PATH, FIXED_FIXTURE_GENERATED_AT)
 
 
 # ---------------------------------------------------------------------------

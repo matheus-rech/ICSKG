@@ -41,8 +41,71 @@ dependencies = [
     "openpyxl>=3.1",
     "tqdm>=4.64",
     "python-dotenv>=1.0",
+    # ─────────────────────────────────────────────────────────────────
+    # Security note (Dependabot — see SECURITY.md or this comment):
+    # ─────────────────────────────────────────────────────────────────
+    # Six Dependabot alerts are open against transitive dependencies that
+    # cannot be bumped within ICSKG-BR's current dependency graph:
+    #
+    #   • urllib3 1.26.20 (4 alerts: 3 high, 1 medium)
+    #     GHSA-38jv-5279-wg99, GHSA-2xpw-w6gg-jr37, GHSA-gm62-xv2j-4w53,
+    #     GHSA-pq67-6m6q-mj2v — decompression bombs + redirect handling.
+    #     Blocked by: pysus==1.0.1 -> elasticsearch[preprocessing]==7.16.2
+    #                  -> urllib3>=1.21.1,<2
+    #     Risk: ICSKG only fetches from Brazilian government endpoints
+    #     (DATASUS FTP, ANS HTTP) which are trusted; the decompression-bomb
+    #     vectors require attacker-controlled HTTP responses.
+    #     Accepted pending pysus upstream upgrade.
+    #
+    #   • tqdm 4.64.0 (1 alert: low)
+    #     GHSA-g7vv-2v7x-gj9p — CLI args injection.
+    #     Blocked by: pysus==1.0.1 -> tqdm==4.64.0
+    #     Risk: ICSKG only uses tqdm as a Python library (progress bars),
+    #     never as a command-line tool with user-controlled args.
+    #     Accepted pending pysus upstream upgrade.
+    #
+    #   • geopandas 1.1.0 (1 alert: high)
+    #     GHSA-6497-prx7-gpmq — SQL injection in to_postgis().
+    #     Blocked by: geobr>=0.2 -> geopandas>=1.0.0,<=1.1
+    #     Risk: ICSKG never calls geopandas.to_postgis() — we use only
+    #     file I/O (read_file, to_file) and spatial joins.
+    #     Accepted pending geobr upstream upgrade.
+    #
+    # Upstream tracking: pysus is the choke point for 5/6 alerts.
+    # Three realistic fix paths, ranked by effort:
+    #
+    #   PATH 1 (RECOMMENDED) — FIOCRUZ ICICT pre-ETL'd ZIPs
+    #     https://bigdata-arquivos.icict.fiocruz.br/PUBLICO/SIH/ETLSIH.zip
+    #     and similar URLs for CNES, SIA, SINASC, etc.
+    #     FIOCRUZ ICICT publishes pre-extracted DATASUS data as plain CSV
+    #     in versioned ZIPs.  Skips the entire DBC→CSV conversion step,
+    #     which means we can drop pysus entirely (along with its
+    #     elasticsearch + urllib3<2 + tqdm==4.64 transitive pins).
+    #     ALL FIVE pysus-blocked CVEs disappear in one move.  Bonus:
+    #     faster pipeline, no native compile, no DBC handling, single
+    #     source of truth maintained by FIOCRUZ.
+    #     Effort: write a small downloader + CSV reader (1-2 days).
+    #     Caveat: the schema differs from raw DATASUS DBC; verify the
+    #     column names match what ICSKG's existing extractors expect.
+    #
+    #   PATH 2 — microdatasus (R package)
+    #     https://github.com/rfsaldanha/microdatasus
+    #     Actively-maintained R package (v2.3.1, June 2024) that provides
+    #     the same DATASUS extraction capability via the `read.dbc` R
+    #     package — also outside the pysus / elasticsearch / urllib3 chain.
+    #     Would eliminate all six Dependabot alerts at the cost of adding
+    #     an R toolchain to the build environment (containerizable).
+    #
+    #   PATH 3 — file an issue against pysus upstream
+    #     Slowest path, depends on third-party maintainer responsiveness.
+    #
+    # See `.planning/phases/12-cuds-construction/12-PLAN.md` for the v0.2
+    # work this can be folded into.
+    # ─────────────────────────────────────────────────────────────────
     # Configuration
     "pyyaml>=6.0",
+    # HuggingFace Datasets — canonical processed-data store (Phase 11)
+    "huggingface_hub>=0.26",
 ]
 
 [dependency-groups]

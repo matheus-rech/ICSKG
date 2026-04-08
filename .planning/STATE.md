@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: completed
-stopped_at: Completed 10-01-PLAN.md (publication figures + tables)
-last_updated: "2026-04-02T05:48:21.421Z"
-last_activity: 2026-04-02
+milestone: v1.1
+milestone_name: ci-reproducibility
+status: in_progress
+stopped_at: Phase 11 plans drafted, awaiting user review before execution
+last_updated: "2026-04-07T05:30:00.000Z"
+last_activity: 2026-04-07
 progress:
-  total_phases: 11
+  total_phases: 12
   completed_phases: 11
-  total_plans: 24
+  total_plans: 29
   completed_plans: 24
-  percent: 96
+  percent: 83
 ---
 
 # Project State
@@ -21,16 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-01)
 
 **Core value:** Reproducible, publicly-sourced database proving whether municipal urban development predicts surgical system performance — first subnational cross-reference of urban development composite indices with surgical indicators.
-**Current focus:** Phase 10 — publication-package
+**Current focus:** Phase 11 — CI reproducibility & HF data layer (milestone v1.1)
 
 ## Current Position
 
-Phase: 10
-Plan: Not started
-Status: Completed 10-01-PLAN.md
-Last activity: 2026-04-02
+Phase: 11
+Plan: 11-01-PLAN.md (HF dataset bootstrap) — drafted, awaiting user review
+Status: Phase 11 plans drafted, none yet executed
+Branch: feature/phase-11-ci-reproducibility-hf (worktree at ../ICSKG-phase11/, based on origin/meta)
+Last activity: 2026-04-07
 
-Progress: [██████████] 96%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 

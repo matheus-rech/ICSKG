@@ -597,6 +597,29 @@ def main(argv: list[str] | None = None) -> int:
     )
     logger.info("Panel assembled: %d rows, %d columns", len(panel), len(panel.columns))
 
+    # Phase 11 fail-loud guard: refuse to build a phantom database.
+    # ICSKG-BR's invariant is "5,570 municipalities x 9 years x 9 dimensions
+    # or fail loudly". A panel with no value columns means upstream ETL
+    # silently produced nothing — almost certainly because data_sources/
+    # processed/ is empty (which is the github-hosted runner default since
+    # that directory is gitignored). Refuse to continue and point at the
+    # remediation paths.
+    from database.impute_ifgf import METADATA_COLS  # noqa: PLC0415
+
+    value_cols = [c for c in panel.columns if c not in METADATA_COLS]
+    if panel.empty or not value_cols:
+        raise RuntimeError(
+            "Empty or metadata-only panel from %s. "
+            "ICSKG-BR requires real source data (SIH/CNES/ANS/IFGF/SIOPS/"
+            "IBGE/IPEA) — got %d rows and %d value columns. "
+            "Either run scripts/extract_*.py to populate %s, "
+            "or fetch the pre-built database from HuggingFace via "
+            "`python -m database.fetch_processed_data --to %s`, "
+            "or point --processed-dir at tests/fixtures/processed_smoke "
+            "for a smoke test. Refusing to build a phantom database."
+            % (processed_dir, len(panel), len(value_cols), processed_dir, db_path)
+        )
+
     # Step 2: Fetch IPCA factors for deflation log
     from database.deflate_ipca import (  # noqa: PLC0415
         fetch_ipca_annual_index,

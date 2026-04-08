@@ -99,6 +99,14 @@
 - [x] **PUBL-09**: Data availability statement with URLs to all source portals
 - [x] **PUBL-10**: Zenodo DOI archive + public GitHub release at submission
 
+### Reproducibility & CI (milestone v1.1)
+
+- [ ] **REPL-01**: Canonical processed data published as a versioned HuggingFace Dataset (`mmrech/icskg-br-processed`), parquet tree shape (panel/, dimensions/, lcogs/, source_tables/), with per-file SHA256 + row counts in a manifest.json. Private until BMJ acceptance, then CC-BY-4.0 public.
+- [ ] **REPL-02**: `database/build_database_v3.py::main()` raises `RuntimeError("Refusing to build a phantom database")` on empty/metadata-only panels, AND `database/impute_ifgf.py::generate_missingness_report()` raises `ValueError` plus pins its DataFrame schema as defense-in-depth. The original cryptic `KeyError: 'variable'` failure mode is unreachable.
+- [ ] **REPL-03**: GitHub Actions Build Database workflow succeeds on a github-hosted runner with no NAS access, fetching from HF via `--from-hf` and `secrets.HF_TOKEN`. All Node 20 actions bumped to Node 24-compatible versions (`actions/checkout@v5`, `actions/upload-artifact@v5`). New `Build Database (smoke)` workflow runs on every push and PR using committed `tests/fixtures/processed_smoke/` in <5 min.
+- [ ] **REPL-04**: Fresh-clone replication walkthrough (`docs/REPLICATION.md`) validated end-to-end via runnable self-test (`docs/REPLICATION.test.sh`). A BMJ peer reviewer can rebuild the database in <15 min with only Python 3.12, git, and an HF read token.
+- [ ] **REPL-05**: HuggingFace Dataset mirrored to Zenodo for DOI minting via `scripts/mirror_to_zenodo.py`. Sandbox deposition validates the path. `.zenodo.json` finalized with real author/institution/funder metadata. Production deposit deferred until BMJ acceptance.
+
 ## v2 Requirements
 
 ### Enhanced Analysis
@@ -199,10 +207,16 @@
 | PUBL-08 | Phase 9 | Complete |
 | PUBL-09 | Phase 9 | Complete |
 | PUBL-10 | Phase 9 | Complete |
+| REPL-01 | Phase 11 | Pending |
+| REPL-02 | Phase 11 | Pending |
+| REPL-03 | Phase 11 | Pending |
+| REPL-04 | Phase 11 | Pending |
+| REPL-05 | Phase 11 | Pending |
 
 **Coverage:**
 - v1 requirements: 48 total
-- Mapped to phases: 48
+- v1.1 requirements (Phase 11): 5 total (REPL-01..REPL-05)
+- Mapped to phases: 53
 - Unmapped: 0 ✓
 
 ---
