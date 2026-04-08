@@ -66,6 +66,25 @@ def imputation_log() -> dict:
     }
 
 
+@pytest.fixture()
+def imputation_log_dataframe() -> pd.DataFrame:
+    """Synthetic imputation log as DataFrame (new format)."""
+    rows = []
+    for year in [2020, 2021]:
+        for variable in ["ifgf_geral", "ifgf_ra", "ifgf_gp", "ifgf_id", "ifgf_el", "ifgf_sa"]:
+            rows.append({
+                "variable": variable,
+                "year": year,
+                "n_imputed": 210,
+                "n_total": 5570,
+                "method": "IterativeImputer(BayesianRidge, sample_posterior=True)",
+                "m_imputations": 5,
+                "max_iter": 10,
+                "aux_variables": "gdp_per_capita, populacao, region_code",
+            })
+    return pd.DataFrame(rows)
+
+
 # ---------------------------------------------------------------------------
 # Tests: create_schema
 # ---------------------------------------------------------------------------
@@ -225,6 +244,48 @@ class TestSeedFunctions:
         ).fetchone()[0]
         # 6 IFGF cols x 2 years = 12 entries
         assert count == 12, "Expected 12 entries, got %d" % count
+
+    def test_imputation_log_dataframe_format(
+        self,
+        mem_conn: sqlite3.Connection,
+        imputation_log_dataframe: pd.DataFrame,
+    ) -> None:
+        """Imputation log should accept DataFrame format."""
+        from database.build_database_v3 import create_schema, seed_imputation_log
+
+        create_schema(mem_conn)
+        seed_imputation_log(mem_conn, imputation_log_dataframe)
+        count = mem_conn.execute(
+            "SELECT COUNT(*) FROM imputation_log"
+        ).fetchone()[0]
+        # 6 IFGF cols x 2 years = 12 entries
+        assert count == 12, "Expected 12 entries, got %d" % count
+
+        # Verify a specific entry
+        row = mem_conn.execute(
+            "SELECT n_imputed, method, m_imputations FROM imputation_log "
+            "WHERE variable='ifgf_geral' AND year=2020"
+        ).fetchone()
+        assert row[0] == 210, "Expected 210 imputed, got %d" % row[0]
+        assert row[2] == 5, "Expected m=5, got %d" % row[2]
+
+    def test_imputation_log_dataframe_validation(
+        self,
+        mem_conn: sqlite3.Connection,
+    ) -> None:
+        """Imputation log DataFrame without required columns should raise."""
+        from database.build_database_v3 import create_schema, seed_imputation_log
+
+        create_schema(mem_conn)
+
+        # DataFrame missing 'variable' column
+        invalid_df = pd.DataFrame({
+            "year": [2020, 2021],
+            "n_imputed": [100, 110],
+        })
+
+        with pytest.raises(ValueError, match="must include columns"):
+            seed_imputation_log(mem_conn, invalid_df)
 
 
 # ---------------------------------------------------------------------------

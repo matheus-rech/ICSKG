@@ -374,22 +374,62 @@ def seed_deflation_log(
 
 def seed_imputation_log(
     conn: sqlite3.Connection,
-    imputation_log: dict,
+    imputation_log,
 ) -> None:
     """Populate imputation_log from IFGF imputation results.
 
-    Creates one row per (variable, year) combination from the
-    imputation log dictionary.
+    Accepts either:
+      - dict output (expected keys: m, max_iter, method, ifgf_cols, aux_cols, per_year)
+      - pandas DataFrame with at least: variable, year (optionally n_imputed, n_total, method, m_imputations, max_iter, aux_variables)
 
     Parameters
     ----------
     conn : sqlite3.Connection
         Open SQLite connection (schema must exist).
-    imputation_log : dict
-        Output of impute_ifgf_mice(), must have keys:
-        m, max_iter, method, ifgf_cols, aux_cols, per_year.
+    imputation_log : dict or pd.DataFrame
+        Output of impute_ifgf_mice().
     """
     cur = conn.cursor()
+
+    # Case 1: DataFrame log already in long format
+    if isinstance(imputation_log, pd.DataFrame):
+        df = imputation_log.copy()
+        if "variable" not in df.columns or "year" not in df.columns:
+            msg = (
+                f"Imputation log DataFrame must include columns ['variable','year']; "
+                f"got {list(df.columns)}"
+            )
+            raise ValueError(msg)
+
+        # Fill optional columns with defaults if missing
+        if "method" not in df.columns:
+            df["method"] = "unknown"
+        if "m_imputations" not in df.columns:
+            df["m_imputations"] = None
+        if "max_iter" not in df.columns:
+            df["max_iter"] = None
+        if "aux_variables" not in df.columns:
+            df["aux_variables"] = None
+        if "n_imputed" not in df.columns:
+            df["n_imputed"] = None
+        if "n_total" not in df.columns:
+            df["n_total"] = None
+
+        rows = df[
+            ["variable", "year", "n_imputed", "n_total", "method", "m_imputations", "max_iter", "aux_variables"]
+        ].values.tolist()
+
+        cur.executemany(
+            "INSERT OR REPLACE INTO imputation_log "
+            "(variable, year, n_imputed, n_total, method, m_imputations, max_iter, aux_variables) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            rows,
+        )
+        conn.commit()
+        logger.info("Seeded %d imputation_log rows (from DataFrame)", len(rows))
+        return
+
+    # Case 2: dict-shaped log (original behavior)
     m = imputation_log.get("m", 5)
     max_iter = imputation_log.get("max_iter", 10)
     method = imputation_log.get("method", "unknown")
@@ -420,7 +460,7 @@ def seed_imputation_log(
         rows,
     )
     conn.commit()
-    logger.info("Seeded %d imputation_log rows", len(rows))
+    logger.info("Seeded %d imputation_log rows (from dict)", len(rows))
 
 
 def load_panel(
@@ -473,7 +513,7 @@ def load_panel(
 def build_database(
     panel: pd.DataFrame,
     ipca_df: pd.DataFrame,
-    imputation_log: dict,
+    imputation_log,
     db_path: Path | str,
     processed_dir: Path | str | None = None,
 ) -> Path:
@@ -485,7 +525,7 @@ def build_database(
         The assembled, imputed panel.
     ipca_df : pd.DataFrame
         IPCA deflation factors.
-    imputation_log : dict
+    imputation_log : dict or pd.DataFrame
         Output of impute_ifgf_mice().
     db_path : Path or str
         Output SQLite file path.
@@ -635,6 +675,14 @@ def main(argv: list[str] | None = None) -> int:
     # Step 3: Impute IFGF
     from database.impute_ifgf import impute_ifgf_mice  # noqa: PLC0415
     panel, imp_log = impute_ifgf_mice(panel, m=5, max_iter=10)
+
+    # Diagnostic logging for imputation log type
+    logger.info("imputation log type: %s", type(imp_log))
+    if isinstance(imp_log, dict):
+        logger.info("imputation log keys: %s", sorted(imp_log.keys()))
+    elif isinstance(imp_log, pd.DataFrame):
+        logger.info("imputation log columns: %s", list(imp_log.columns))
+
     logger.info("IFGF imputation: %d rows imputed", imp_log["n_imputed_rows"])
 
     # Step 4: Build database
