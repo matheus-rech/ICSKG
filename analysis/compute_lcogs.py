@@ -301,6 +301,25 @@ def compute_lcogs2(
         result["sao_per_100k"] = np.nan
         return result
 
+    # Replicate cross-sectional data: if professionals only have one year
+    # (e.g., 2023 snapshot) but panel spans multiple years, replicate across
+    # all panel years so the join works.
+    prof_years = professionals_df["year"].unique()
+    panel_years = result["year"].unique()
+    if len(prof_years) == 1 and not set(prof_years).issubset(set(panel_years)):
+        logger.info(
+            "LCoGS-2: professionals are cross-sectional (year=%s) -- "
+            "replicating across panel years %s",
+            prof_years[0], sorted(panel_years),
+        )
+        base = professionals_df.drop(columns=["year"])
+        frames = []
+        for yr in panel_years:
+            yr_df = base.copy()
+            yr_df["year"] = yr
+            frames.append(yr_df)
+        professionals_df = pd.concat(frames, ignore_index=True)
+
     # Count SAO professionals per (cod_ibge, year)
     sao_counts = (
         professionals_df
