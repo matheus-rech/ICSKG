@@ -1,17 +1,32 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1775077627662,
+  "lastScanned": 1775862613212,
   "projectRoot": "/Users/matheusrech/untitled folder 6/ICSKG",
   "techStack": {
-    "languages": [],
-    "frameworks": [],
+    "languages": [
+      {
+        "name": "Python",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "pyproject.toml"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "pytest",
+        "version": null,
+        "category": "testing"
+      }
+    ],
     "packageManager": null,
     "runtime": null
   },
   "build": {
     "buildCommand": null,
-    "testCommand": null,
-    "lintCommand": null,
+    "testCommand": "pytest",
+    "lintCommand": "ruff check",
     "devCommand": null,
     "scripts": {}
   },
@@ -26,7 +41,8 @@
     "workspaces": [],
     "mainDirectories": [
       "docs",
-      "scripts"
+      "scripts",
+      "tests"
     ],
     "gitBranches": {
       "defaultBranch": "meta",
@@ -35,40 +51,58 @@
   },
   "customNotes": [],
   "directoryMap": {
+    "ICSKG-BR_Final_Package_v4": {
+      "path": "ICSKG-BR_Final_Package_v4",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1775862613207,
+      "keyFiles": [
+        "ICSKG-BR_Data_Process_and_Reproducibility.docx",
+        "extract_lcogs1.py"
+      ]
+    },
     "analysis": {
       "path": "analysis",
       "purpose": null,
-      "fileCount": 1,
-      "lastAccessed": 1775077627655,
+      "fileCount": 15,
+      "lastAccessed": 1775862613208,
       "keyFiles": [
-        "icskg_analysis_pipeline.py"
+        "age_standardization.py",
+        "causal_inference.py",
+        "compute_dimensions.py",
+        "compute_lcogs.py",
+        "data_dictionary.py"
       ]
     },
     "data_sources": {
       "path": "data_sources",
       "purpose": null,
-      "fileCount": 1,
-      "lastAccessed": 1775077627656,
+      "fileCount": 3,
+      "lastAccessed": 1775862613209,
       "keyFiles": [
-        "README.md"
+        "README.md",
+        "amc_crosswalk_2015_2023.csv",
+        "ibge_municipios_2023.csv"
       ]
     },
     "database": {
       "path": "database",
       "purpose": null,
-      "fileCount": 3,
-      "lastAccessed": 1775077627656,
+      "fileCount": 11,
+      "lastAccessed": 1775862613209,
       "keyFiles": [
+        "__init__.py",
+        "assemble_panel.py",
         "build_database_v2.py",
-        "database_metadata.json",
-        "pipeline.py"
+        "build_database_v3.py",
+        "database_metadata.json"
       ]
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 2,
-      "lastAccessed": 1775077627656,
+      "lastAccessed": 1775862613210,
       "keyFiles": [
         "ICSKG-BR_Methodology_and_Gap_Analysis.md",
         "README.md"
@@ -78,7 +112,7 @@
       "path": "output",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1775077627657,
+      "lastAccessed": 1775862613210,
       "keyFiles": [
         "README.md"
       ]
@@ -86,44 +120,93 @@
     "scripts": {
       "path": "scripts",
       "purpose": "Build/utility scripts",
-      "fileCount": 3,
-      "lastAccessed": 1775077627657,
+      "fileCount": 14,
+      "lastAccessed": 1775862613210,
       "keyFiles": [
+        "__init__.py",
+        "build_amc_crosswalk.py",
+        "cnes_extract.py",
         "continue_raw_download.py",
-        "download_ans.py",
-        "sih_batch_v2.py"
+        "download_ans.py"
+      ]
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 27,
+      "lastAccessed": 1775862613211,
+      "keyFiles": [
+        "__init__.py",
+        "test_amc_crosswalk.py",
+        "test_assemble_panel.py",
+        "test_build_database_v3.py",
+        "test_cnes_extract.py"
+      ]
+    },
+    "ICSKG-BR_Final_Package_v4/docs": {
+      "path": "ICSKG-BR_Final_Package_v4/docs",
+      "purpose": "Documentation",
+      "fileCount": 4,
+      "lastAccessed": 1775862613211,
+      "keyFiles": [
+        "ICSKG-BR_Methodology_and_Gap_Analysis.md",
+        "ICSKG-BR_Study_Protocol_v2.docx",
+        "ICSKG-BR_Technical_Cookbook_v2.docx"
+      ]
+    },
+    "tests/fixtures": {
+      "path": "tests/fixtures",
+      "purpose": "Test fixtures",
+      "fileCount": 10,
+      "lastAccessed": 1775862613212,
+      "keyFiles": [
+        "ETLCNES.ST_XX__23_01_t.csv",
+        "ETLSIH.ST_XX_2023_1_t.csv",
+        "ans_quarterly_sample.csv"
       ]
     }
   },
   "hotPaths": [
     {
       "path": "database/pipeline.py",
-      "accessCount": 34,
-      "lastAccessed": 1775091474096,
+      "accessCount": 39,
+      "lastAccessed": 1775862833607,
       "type": "file"
     },
     {
       "path": "",
-      "accessCount": 27,
-      "lastAccessed": 1775091480731,
+      "accessCount": 33,
+      "lastAccessed": 1775871508372,
       "type": "directory"
     },
     {
       "path": ".planning/REQUIREMENTS.md",
-      "accessCount": 17,
-      "lastAccessed": 1775107445825,
-      "type": "file"
-    },
-    {
-      "path": ".planning/PROJECT.md",
-      "accessCount": 16,
-      "lastAccessed": 1775107429350,
+      "accessCount": 18,
+      "lastAccessed": 1775549487608,
       "type": "file"
     },
     {
       "path": ".planning/ROADMAP.md",
-      "accessCount": 15,
-      "lastAccessed": 1775107429156,
+      "accessCount": 18,
+      "lastAccessed": 1775870433827,
+      "type": "file"
+    },
+    {
+      "path": ".planning/PROJECT.md",
+      "accessCount": 17,
+      "lastAccessed": 1775862737987,
+      "type": "file"
+    },
+    {
+      "path": "database/utils.py",
+      "accessCount": 17,
+      "lastAccessed": 1775867977788,
+      "type": "file"
+    },
+    {
+      "path": ".planning/STATE.md",
+      "accessCount": 14,
+      "lastAccessed": 1775870432537,
       "type": "file"
     },
     {
@@ -133,9 +216,9 @@
       "type": "file"
     },
     {
-      "path": ".planning/STATE.md",
+      "path": "CLAUDE.md",
       "accessCount": 10,
-      "lastAccessed": 1775107445528,
+      "lastAccessed": 1775109471845,
       "type": "file"
     },
     {
@@ -151,21 +234,21 @@
       "type": "file"
     },
     {
+      "path": "config.yaml",
+      "accessCount": 9,
+      "lastAccessed": 1775870667523,
+      "type": "file"
+    },
+    {
       "path": "analysis/icskg_analysis_pipeline.py",
       "accessCount": 8,
       "lastAccessed": 1775079282582,
       "type": "file"
     },
     {
-      "path": "database/utils.py",
+      "path": "database/validation.py",
       "accessCount": 8,
-      "lastAccessed": 1775091466815,
-      "type": "file"
-    },
-    {
-      "path": "CLAUDE.md",
-      "accessCount": 8,
-      "lastAccessed": 1775107430521,
+      "lastAccessed": 1775863612605,
       "type": "file"
     },
     {
@@ -205,15 +288,21 @@
       "type": "file"
     },
     {
-      "path": "database/validation.py",
-      "accessCount": 6,
-      "lastAccessed": 1775091467480,
-      "type": "file"
-    },
-    {
       "path": "scripts/sih_batch_v2.py",
       "accessCount": 6,
       "lastAccessed": 1775091474493,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 6,
+      "lastAccessed": 1775862735897,
+      "type": "file"
+    },
+    {
+      "path": "config.example.yaml",
+      "accessCount": 6,
+      "lastAccessed": 1775862820758,
       "type": "file"
     },
     {
@@ -241,9 +330,9 @@
       "type": "file"
     },
     {
-      "path": "README.md",
-      "accessCount": 4,
-      "lastAccessed": 1775078086014,
+      "path": "pyproject.toml",
+      "accessCount": 5,
+      "lastAccessed": 1775549458720,
       "type": "file"
     },
     {
@@ -271,12 +360,6 @@
       "type": "file"
     },
     {
-      "path": "config.example.yaml",
-      "accessCount": 4,
-      "lastAccessed": 1775091481277,
-      "type": "file"
-    },
-    {
       "path": "scripts/download_ans.py",
       "accessCount": 3,
       "lastAccessed": 1775077786478,
@@ -292,12 +375,6 @@
       "path": "database/database_metadata.json",
       "accessCount": 3,
       "lastAccessed": 1775087732004,
-      "type": "file"
-    },
-    {
-      "path": "pyproject.toml",
-      "accessCount": 3,
-      "lastAccessed": 1775090849792,
       "type": "file"
     },
     {
@@ -382,12 +459,6 @@
       "path": ".planning/phases/01-foundation/01-03-SUMMARY.md",
       "accessCount": 1,
       "lastAccessed": 1775086975942,
-      "type": "file"
-    },
-    {
-      "path": "config.yaml",
-      "accessCount": 1,
-      "lastAccessed": 1775086996061,
       "type": "file"
     },
     {

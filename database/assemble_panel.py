@@ -37,6 +37,7 @@ import pandas as pd
 
 from database.utils import (
     load_ibge_municipios,
+    map_6digit_to_7digit,
     normalize_cod_ibge,
     rename_municipality_column,
 )
@@ -64,26 +65,25 @@ logging.basicConfig(
 SOURCE_CATALOG: dict[str, dict[str, Any]] = {
     "sih": {
         "path": "sih",
-        "glob": "*.parquet",
+        "glob": "sih_mun_year_*.parquet",
         "value_cols": [
-            "procedure_count", "total_value", "deaths",
-            "aih_count", "total_days",
+            "n_procedures", "n_deaths", "total_cost_brl", "mean_stay_days",
         ],
         "is_crosssectional": False,
-        "monetary_cols": ["total_value"],
+        "monetary_cols": ["total_cost_brl"],
     },
     "cnes_facilities": {
         "path": "cnes",
-        "glob": "facilities_*.parquet",
+        "glob": "facilities*.parquet",
         "value_cols": ["total_beds", "is_bellwether"],
-        "is_crosssectional": False,
+        "is_crosssectional": True,
         "monetary_cols": [],
     },
     "cnes_professionals": {
         "path": "cnes",
-        "glob": "professionals_*.parquet",
-        "value_cols": ["sao_category"],
-        "is_crosssectional": False,
+        "glob": "professionals*.parquet",
+        "value_cols": ["sao_count", "n_surgeons", "n_anesthesiologists", "n_obstetricians"],
+        "is_crosssectional": True,
         "monetary_cols": [],
     },
     "population": {
@@ -95,14 +95,14 @@ SOURCE_CATALOG: dict[str, dict[str, Any]] = {
     },
     "gdp_per_capita": {
         "path": "ibge_sidra",
-        "glob": "gdp_per_capita.parquet",
+        "glob": "gdp*.parquet",
         "value_cols": ["gdp_abs", "gdp_estimated", "gdp_per_capita"],
         "is_crosssectional": False,
         "monetary_cols": ["gdp_per_capita"],
     },
     "idhm": {
         "path": "ipea_idhm",
-        "glob": "idhm.parquet",
+        "glob": "idhm*.parquet",
         "value_cols": ["idhm", "idhm_educacao", "idhm_longevidade", "idhm_renda"],
         "is_crosssectional": True,
         "monetary_cols": [],
@@ -127,7 +127,7 @@ SOURCE_CATALOG: dict[str, dict[str, Any]] = {
     },
     "census_sanitation": {
         "path": "census_sanitation",
-        "glob": "sanitation.parquet",
+        "glob": "sanitation*.parquet",
         "value_cols": ["pct_sanitation_adequate", "pct_water_adequate"],
         "is_crosssectional": True,
         "monetary_cols": [],
@@ -258,7 +258,73 @@ def load_source(
         )
         return pd.DataFrame()
 
-    df["cod_ibge"] = normalize_cod_ibge(df["cod_ibge"])
+    df["cod_ibge"] = map_6digit_to_7digit(df["cod_ibge"])
+    # Drop rows where code couldn't be mapped to a valid IBGE municipality
+    n_before = len(df)
+    df = df.dropna(subset=["cod_ibge"])
+    n_dropped = n_before - len(df)
+    if n_dropped > 0:
+        logger.warning(
+            "load_source('%s'): dropped %d rows with unmappable cod_ibge",
+            name, n_dropped,
+        )
+
+    # ------------------------------------------------------------------
+    # Special aggregation: cnes_professionals has one row per professional.
+    # Aggregate to per-municipality SAO counts before any merge/validation.
+    # Deduplication by cns_prof (unique person ID) prevents double-counting
+    # professionals who appear in multiple facilities.
+    # ------------------------------------------------------------------
+    if name == "cnes_professionals" and "sao_category" in df.columns:
+        logger.info(
+            "load_source('cnes_professionals'): aggregating %d per-professional rows "
+            "to per-municipality SAO counts",
+            len(df),
+        )
+        # Dedup by unique professional within each municipality-year
+        dedup_cols = ["cod_ibge", "year", "cns_prof"] if "cns_prof" in df.columns else ["cod_ibge", "year"]
+        df_dedup = df.drop_duplicates(subset=dedup_cols)
+
+        # Total SAO count per municipality-year
+        sao_count = (
+            df_dedup.groupby(["cod_ibge", "year"])
+            .size()
+            .reset_index(name="sao_count")
+        )
+
+        # Per-category counts
+        category_counts = (
+            df_dedup.groupby(["cod_ibge", "year", "sao_category"])
+            .size()
+            .unstack(fill_value=0)
+            .reset_index()
+        )
+        # Ensure expected category columns exist (even if no rows for that category)
+        for col, mapped in [
+            ("surgeon", "n_surgeons"),
+            ("anesthesiologist", "n_anesthesiologists"),
+            ("obstetrician", "n_obstetricians"),
+        ]:
+            if col not in category_counts.columns:
+                category_counts[col] = 0
+            category_counts = category_counts.rename(columns={col: mapped})
+
+        # Keep only the mapped columns plus keys
+        keep_cols = ["cod_ibge", "year", "n_surgeons", "n_anesthesiologists", "n_obstetricians"]
+        category_counts = category_counts[[c for c in keep_cols if c in category_counts.columns]]
+
+        df = sao_count.merge(category_counts, on=["cod_ibge", "year"], how="left")
+
+        # Fill any missing category columns
+        for col in ["n_surgeons", "n_anesthesiologists", "n_obstetricians"]:
+            if col not in df.columns:
+                df[col] = 0
+
+        logger.info(
+            "load_source('cnes_professionals'): aggregated to %d municipality-year rows, "
+            "columns: %s",
+            len(df), list(df.columns),
+        )
 
     # Cross-sectional replication: replicate single-year rows across all panel years
     if is_crosssectional:
@@ -492,6 +558,34 @@ def assemble_panel(
             "Row count invariant failed for year %d: got %d, expected %d"
             % (year, n_year, expected_per_year)
         )
+
+    # ------------------------------------------------------------------
+    # Step 4b: Resolve duplicate columns from merge (e.g., populacao_x/y, cnes_x/y)
+    # ------------------------------------------------------------------
+    dup_suffixes = [c for c in panel.columns if c.endswith("_x") or c.endswith("_y")]
+    if dup_suffixes:
+        resolved = set()
+        for col in list(panel.columns):
+            if col.endswith("_x"):
+                base = col[:-2]
+                partner = base + "_y"
+                if partner in panel.columns:
+                    # Keep _x, drop _y (they should be identical)
+                    panel = panel.rename(columns={col: base})
+                    panel = panel.drop(columns=[partner])
+                    resolved.add(base)
+                else:
+                    panel = panel.rename(columns={col: base})
+                    resolved.add(base)
+            elif col.endswith("_y") and col[:-2] not in resolved:
+                base = col[:-2]
+                panel = panel.rename(columns={col: base})
+                resolved.add(base)
+        if resolved:
+            logger.info(
+                "Resolved %d duplicate column(s) from merge: %s",
+                len(resolved), sorted(resolved),
+            )
 
     logger.info(
         "Panel assembly complete: %d rows, %d columns",

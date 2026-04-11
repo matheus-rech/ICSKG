@@ -45,7 +45,8 @@ IBGE_MUNICIPIOS_PATH: Path = (
 # All known municipality code column names across ICSKG-BR data sources.
 # Maps source column name -> canonical "cod_ibge".
 MUNICIPALITY_CODE_COLUMNS: dict[str, str] = {
-    "Cod_IBGE":       "cod_ibge",   # FIRJAN IFGF Excel
+    "Código":         "cod_ibge",   # FIRJAN IFGF Excel (2025 edition)
+    "Cod_IBGE":       "cod_ibge",   # FIRJAN IFGF Excel (legacy)
     "CD_MUNICIPIO":   "cod_ibge",   # ANS CSV
     "CD_MUN":         "cod_ibge",   # Shapefiles (geobr, IBGE)
     "MUNIC_RES":      "cod_ibge",   # SIH -- municipality of patient residence
@@ -114,6 +115,59 @@ def normalize_cod_ibge(series: pd.Series) -> pd.Series:
         )
 
     return normalized
+
+
+def map_6digit_to_7digit(series: pd.Series) -> pd.Series:
+    """Map 6-digit IBGE codes (without check digit) to 7-digit canonical codes.
+
+    Some sources (FIRJAN IFGF, RENAVAM) use 6-digit IBGE codes that lack
+    the check digit. Zero-padding does NOT work — the 7th digit is a check
+    digit, not a leading zero. This function builds a crosswalk from the
+    IBGE reference list: cod_ibge[:6] -> cod_ibge.
+
+    Parameters
+    ----------
+    series : pd.Series
+        6-digit municipality codes (int or str).
+
+    Returns
+    -------
+    pd.Series
+        7-digit canonical codes. Unmatched codes are returned as NaN.
+    """
+    ref = load_ibge_municipios()
+    valid_7digit = set(ref["cod_ibge"])
+    crosswalk_6to7 = dict(zip(ref["cod_ibge"].str[:6], ref["cod_ibge"]))
+
+    null_mask = series.isna()
+    keys = series.astype(str).str.strip()
+
+    # First try: already a valid 7-digit code
+    mapped = keys.where(keys.isin(valid_7digit), other=np.nan)
+
+    # Second try: map 6-digit codes via crosswalk
+    unmapped_mask = mapped.isna() & ~null_mask
+    if unmapped_mask.any():
+        keys_6 = keys[unmapped_mask].str.zfill(6)
+        mapped_6 = keys_6.map(crosswalk_6to7)
+        mapped = mapped.fillna(mapped_6)
+
+    # Third try: strip leading zero from zero-padded 7-digit codes (e.g., 0110001 -> 110001)
+    unmapped_mask = mapped.isna() & ~null_mask
+    if unmapped_mask.any():
+        stripped = keys[unmapped_mask].str.lstrip("0").str.zfill(6)
+        mapped_stripped = stripped.map(crosswalk_6to7)
+        mapped = mapped.fillna(mapped_stripped)
+
+    n_unmapped = mapped.isna().sum() - null_mask.sum()
+    if n_unmapped > 0:
+        sample = keys[mapped.isna() & ~null_mask].head(5).tolist()
+        logger.warning(
+            "map_6digit_to_7digit: %d codes not found in IBGE reference. Sample: %s",
+            n_unmapped, sample,
+        )
+
+    return mapped
 
 
 def normalize_column_name(col: str) -> str:

@@ -1,0 +1,7 @@
+outcome,chi2_stat,p_value,df,preferred_model
+lcogs1_distance_km,0.0,1.0,1,RE
+sao_per_100k,,,0,zero_variance
+surgical_volume_per_100k,937.57281114693,6.67000937823329e-206,1,FE
+pomr,224.0146308737425,1.2042740504571881e-50,1,FE
+financial_risk_ratio,1287.2217546171203,6.762762437068205e-282,1,FE
+catastrophic_expenditure,6.872870747717805,0.008751395995752122,1,FE

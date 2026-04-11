@@ -322,7 +322,7 @@ def extract_cnes_facilities(
     Path
         Path to the written facilities.parquet file.
     """
-    from database.utils import normalize_cod_ibge, rename_municipality_column  # noqa: PLC0415
+    from database.utils import map_6digit_to_7digit, rename_municipality_column  # noqa: PLC0415
     from database.validation import validate_dataframe  # noqa: PLC0415
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -330,16 +330,19 @@ def extract_cnes_facilities(
     # Build 2-digit year for glob pattern
     yy = year % 100
 
-    # Check for existing files first
+    # Check for existing files: ETLCNES CSVs or PySUS parquets
     csv_files = sorted(input_dir.glob("ETLCNES.ST_*__%02d_*_t.csv" % yy))
 
+    # Also check for PySUS-format parquets (ST{UF}{YYMM}.parquet)
+    pysus_files = sorted(input_dir.glob("ST*%02d*.parquet" % yy))
+
     # If no files found and zip provided, extract
-    if not csv_files and zip_path and zip_path.exists():
+    if not csv_files and not pysus_files and zip_path and zip_path.exists():
         logger.info("No CNES ST files found in %s -- extracting from zip", input_dir)
         _extract_from_zip(zip_path, input_dir, year_start=year, year_end=year)
         csv_files = sorted(input_dir.glob("ETLCNES.ST_*__%02d_*_t.csv" % yy))
 
-    if not csv_files:
+    if not csv_files and not pysus_files:
         logger.warning(
             "No CNES ST files found for year %d in %s", year, input_dir
         )
@@ -353,14 +356,29 @@ def extract_cnes_facilities(
         return out_path
 
     # Read all matching files
-    logger.info("Reading %d CNES ST files for year %d", len(csv_files), year)
     frames: list[pd.DataFrame] = []
-    for csv_file in csv_files:
-        try:
-            df = _read_cnes_st_csv(csv_file)
-            frames.append(df)
-        except Exception as exc:  # noqa: BLE001
-            logger.error("Failed to read %s: %s", csv_file, exc)
+
+    if csv_files:
+        logger.info("Reading %d CNES ST CSV files for year %d", len(csv_files), year)
+        for csv_file in csv_files:
+            try:
+                df = _read_cnes_st_csv(csv_file)
+                frames.append(df)
+            except Exception as exc:  # noqa: BLE001
+                logger.error("Failed to read %s: %s", csv_file, exc)
+
+    if pysus_files and not frames:
+        # Fall back to PySUS parquets
+        logger.info("Reading %d PySUS CNES ST parquet files for year %d", len(pysus_files), year)
+        for pq_file in pysus_files:
+            try:
+                df = pd.read_parquet(pq_file)
+                # Select only needed columns (if present)
+                available = [c for c in CNES_ST_COLS if c in df.columns]
+                df = df[available].copy()
+                frames.append(df)
+            except Exception as exc:  # noqa: BLE001
+                logger.error("Failed to read %s: %s", pq_file, exc)
 
     if not frames:
         logger.error("All CNES ST files failed to read for year %d", year)
@@ -379,7 +397,7 @@ def extract_cnes_facilities(
     # Rename and normalize municipality codes
     # ---------------------------------------------------------------------------
     combined = rename_municipality_column(combined)
-    combined["cod_ibge"] = normalize_cod_ibge(combined["cod_ibge"])
+    combined["cod_ibge"] = map_6digit_to_7digit(combined["cod_ibge"])
 
     # ---------------------------------------------------------------------------
     # Extract year from COMPETEN (YYYYMM -> YYYY)
@@ -568,7 +586,7 @@ def extract_cnes_professionals(
     Path
         Path to the written professionals.parquet file.
     """
-    from database.utils import normalize_cod_ibge, rename_municipality_column  # noqa: PLC0415
+    from database.utils import map_6digit_to_7digit, rename_municipality_column  # noqa: PLC0415
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -660,7 +678,7 @@ def extract_cnes_professionals(
     # Rename CODUFMUN -> cod_ibge and normalize
     # ---------------------------------------------------------------------------
     combined = rename_municipality_column(combined)
-    combined["cod_ibge"] = normalize_cod_ibge(combined["cod_ibge"])
+    combined["cod_ibge"] = map_6digit_to_7digit(combined["cod_ibge"])
 
     # ---------------------------------------------------------------------------
     # Extract year from COMPETEN (YYYYMM -> YYYY)

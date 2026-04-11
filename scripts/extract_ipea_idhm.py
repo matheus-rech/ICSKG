@@ -157,7 +157,7 @@ def fetch_idhm_series(
     # Filter: municipality level only (exclude national/state/region)
     # -----------------------------------------------------------------
     if "NIVNOME" in df.columns:
-        df = df[df["NIVNOME"] == "Municipios"].copy()
+        df = df[df["NIVNOME"].str.startswith("Munic")].copy()
     else:
         logger.warning("NIVNOME column not found -- cannot filter by territory level")
 
@@ -239,16 +239,9 @@ def extract_idhm(
     merged = merged[final_cols]
 
     # -----------------------------------------------------------------
-    # Validate
-    # -----------------------------------------------------------------
-    merged, report = validate_dataframe(
-        merged,
-        source_name="ipea_idhm",
-        strict=False,
-    )
-
-    # -----------------------------------------------------------------
-    # Write Parquet
+    # Write Parquet (skip validate_dataframe — IDHM is cross-sectional
+    # with year=2010 which is outside the 2015-2023 study scope.
+    # Year replication happens in assemble_panel.py.)
     # -----------------------------------------------------------------
     out_path = output_dir / ("idhm_%d.parquet" % target_year)
     merged.to_parquet(out_path, index=False)

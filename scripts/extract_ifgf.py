@@ -47,7 +47,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from database.utils import normalize_cod_ibge, rename_municipality_column  # noqa: PLC0415
+from database.utils import map_6digit_to_7digit, normalize_cod_ibge, rename_municipality_column  # noqa: PLC0415
 from database.validation import validate_dataframe  # noqa: PLC0415
 
 logger = logging.getLogger(__name__)
@@ -82,12 +82,72 @@ IFGF_VALUE_COLUMNS = list(IFGF_COLUMN_MAP.values())
 # Core parsing functions
 # ---------------------------------------------------------------------------
 
+def _melt_wide_sheet(
+    path: Path,
+    sheet_name: str,
+    value_name: str,
+) -> pd.DataFrame:
+    """Read one wide-format IFGF sheet and melt to long format.
+
+    Wide columns like 'IFGF 2015', 'IFGF Autonomia 2015' are melted
+    to (cod_ibge, year, value_name).
+    """
+    df = pd.read_excel(
+        path,
+        sheet_name=sheet_name,
+        dtype={"Código": str, "Cod_IBGE": str},
+        engine="openpyxl",
+    )
+    df.columns = df.columns.str.strip()
+    df = rename_municipality_column(df)
+    # IFGF uses 6-digit codes without check digit — map to 7-digit canonical
+    df["cod_ibge"] = map_6digit_to_7digit(df["cod_ibge"])
+
+    # Identify year columns (any column ending with a 4-digit year)
+    year_cols = {}
+    for col in df.columns:
+        if col in ("cod_ibge", "UF", "Município"):
+            continue
+        # Extract trailing year from column name like "IFGF 2015"
+        parts = str(col).rsplit(" ", 1)
+        if len(parts) == 2 and parts[1].isdigit() and len(parts[1]) == 4:
+            year_cols[col] = int(parts[1])
+
+    if not year_cols:
+        logger.warning("No year columns found in sheet '%s'", sheet_name)
+        return pd.DataFrame(columns=["cod_ibge", "year", value_name])
+
+    # Melt wide to long
+    melted = df.melt(
+        id_vars=["cod_ibge"],
+        value_vars=list(year_cols.keys()),
+        var_name="_year_col",
+        value_name=value_name,
+    )
+    melted["year"] = melted["_year_col"].map(year_cols)
+    melted[value_name] = pd.to_numeric(melted[value_name], errors="coerce")
+    return melted[["cod_ibge", "year", value_name]]
+
+
+# Sheet name -> canonical column name mapping for IFGF 2025 edition
+_IFGF_SHEET_MAP: dict[str, str] = {
+    "IFGF Geral": "ifgf_geral",
+    "IFGF Autonomia": "ifgf_ra",
+    "IFGF Gastos com Pessoal": "ifgf_gp",
+    "IFGF Investimentos": "ifgf_id",
+    "IFGF Liquidez": "ifgf_el",
+}
+
+
 def parse_ifgf(
     path: Path,
     year_start: int = 2015,
     year_end: int = 2023,
 ) -> pd.DataFrame:
     """Parse the IFGF Excel file into a standardised DataFrame.
+
+    Handles both wide format (2025 edition: one sheet per sub-index,
+    years as columns) and legacy long format (single sheet with Ano column).
 
     Parameters
     ----------
@@ -102,76 +162,85 @@ def parse_ifgf(
     -------
     pd.DataFrame
         DataFrame with columns [cod_ibge, year, ifgf_geral, ifgf_ra,
-        ifgf_gp, ifgf_id, ifgf_el, ifgf_sa]. NaN values for MNAR
+        ifgf_gp, ifgf_id, ifgf_el]. NaN values for MNAR
         municipalities are preserved.
     """
     logger.info("Reading IFGF Excel from %s", path)
 
     # -----------------------------------------------------------------
-    # Read Excel with Cod_IBGE as string to preserve leading zeros
+    # Detect format: check sheet names for multi-sheet wide format
     # -----------------------------------------------------------------
-    df = pd.read_excel(
-        path,
-        dtype={"Cod_IBGE": str},
-        engine="openpyxl",
-    )
+    import openpyxl  # noqa: PLC0415
+    wb = openpyxl.load_workbook(path, read_only=True)
+    sheets = wb.sheetnames
+    wb.close()
 
-    # -----------------------------------------------------------------
-    # Clean column names (strip whitespace)
-    # -----------------------------------------------------------------
-    df.columns = df.columns.str.strip()
+    is_wide_format = any(s in _IFGF_SHEET_MAP for s in sheets)
 
-    # -----------------------------------------------------------------
-    # Rename municipality code column: Cod_IBGE -> cod_ibge
-    # -----------------------------------------------------------------
-    df = rename_municipality_column(df)
+    if is_wide_format:
+        # Wide format (2025 edition): one sheet per sub-index
+        logger.info("Detected wide-format IFGF (sheets: %s)", sheets)
+        merged = None
+        for sheet_name, col_name in _IFGF_SHEET_MAP.items():
+            if sheet_name not in sheets:
+                logger.warning("Sheet '%s' not found — skipping", sheet_name)
+                continue
+            melted = _melt_wide_sheet(path, sheet_name, col_name)
+            if merged is None:
+                merged = melted
+            else:
+                merged = merged.merge(melted, on=["cod_ibge", "year"], how="outer")
 
-    # -----------------------------------------------------------------
-    # Normalize municipality codes to 7-digit zero-padded strings
-    # -----------------------------------------------------------------
-    df["cod_ibge"] = normalize_cod_ibge(df["cod_ibge"])
+        if merged is None or merged.empty:
+            raise ValueError("No data extracted from IFGF sheets")
+
+        df = merged
+    else:
+        # Legacy long format: single sheet with Ano column
+        logger.info("Detected long-format IFGF")
+        df = pd.read_excel(
+            path,
+            dtype={"Cod_IBGE": str, "Código": str},
+            engine="openpyxl",
+        )
+        df.columns = df.columns.str.strip()
+        df = rename_municipality_column(df)
+        df["cod_ibge"] = normalize_cod_ibge(df["cod_ibge"])
+
+        if "Ano" in df.columns:
+            df = df.rename(columns={"Ano": "year"})
+        elif "ano" in df.columns:
+            df = df.rename(columns={"ano": "year"})
+        else:
+            raise ValueError(
+                "No 'Ano' column found in IFGF Excel. "
+                "Columns present: %s" % list(df.columns)
+            )
+
+        # Rename IFGF columns to lowercase canonical names
+        rename_map = {}
+        for orig, canonical in IFGF_COLUMN_MAP.items():
+            for col in df.columns:
+                if col.strip().upper() == orig.upper():
+                    rename_map[col] = canonical
+                    break
+        df = df.rename(columns=rename_map)
+
+        # Coerce all IFGF value columns to numeric
+        for col in IFGF_VALUE_COLUMNS:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
 
     # -----------------------------------------------------------------
     # Filter years to study scope
     # -----------------------------------------------------------------
-    if "Ano" in df.columns:
-        df = df[df["Ano"].between(year_start, year_end)].copy()
-        df = df.rename(columns={"Ano": "year"})
-    elif "ano" in df.columns:
-        df = df[df["ano"].between(year_start, year_end)].copy()
-        df = df.rename(columns={"ano": "year"})
-    else:
-        raise ValueError(
-            "No 'Ano' column found in IFGF Excel. "
-            "Columns present: %s" % list(df.columns)
-        )
-
     df["year"] = pd.to_numeric(df["year"], errors="coerce").astype(int)
-
-    # -----------------------------------------------------------------
-    # Rename IFGF columns to lowercase canonical names
-    # -----------------------------------------------------------------
-    rename_map = {}
-    for orig, canonical in IFGF_COLUMN_MAP.items():
-        # Handle case-insensitive matching
-        for col in df.columns:
-            if col.strip().upper() == orig.upper():
-                rename_map[col] = canonical
-                break
-    df = df.rename(columns=rename_map)
-
-    # -----------------------------------------------------------------
-    # Coerce all IFGF value columns to numeric (preserves NaN for MNAR)
-    # -----------------------------------------------------------------
-    for col in IFGF_VALUE_COLUMNS:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+    df = df[df["year"].between(year_start, year_end)].copy()
 
     # -----------------------------------------------------------------
     # Select and return final columns
     # -----------------------------------------------------------------
     final_cols = ["cod_ibge", "year"] + IFGF_VALUE_COLUMNS
-    # Only keep columns that exist
     available_cols = [c for c in final_cols if c in df.columns]
     df = df[available_cols].reset_index(drop=True)
 

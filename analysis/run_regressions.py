@@ -195,6 +195,14 @@ def run_panel_regressions(panel: pd.DataFrame) -> dict:
         y = subset[outcome_col]
         x = subset[["cuds"]]
 
+        # Skip if dependent variable has zero or near-zero variance
+        if y.std() < 1e-10:
+            logger.warning(
+                "run_panel_regressions: %s has zero variance -- skipping",
+                outcome_col,
+            )
+            continue
+
         # PanelOLS with two-way fixed effects
         mod = PanelOLS(
             dependent=y,
@@ -205,7 +213,14 @@ def run_panel_regressions(panel: pd.DataFrame) -> dict:
         )
 
         # Fit with cluster-robust SE at municipality level (STAT-02)
-        res = mod.fit(cov_type="clustered", cluster_entity=True)
+        try:
+            res = mod.fit(cov_type="clustered", cluster_entity=True)
+        except (ZeroDivisionError, np.linalg.LinAlgError) as exc:
+            logger.warning(
+                "run_panel_regressions: %s failed to fit: %s -- skipping",
+                outcome_col, exc,
+            )
+            continue
 
         results[outcome_col] = res
 
@@ -267,17 +282,48 @@ def run_hausman_tests(panel: pd.DataFrame) -> pd.DataFrame:
         y = subset[outcome_col]
         x = subset[["cuds"]]
 
+        # Skip if dependent variable has zero or near-zero variance
+        if y.std() < 1e-10:
+            rows.append({
+                "outcome": outcome_col,
+                "chi2_stat": np.nan,
+                "p_value": np.nan,
+                "df": 0,
+                "preferred_model": "zero_variance",
+            })
+            continue
+
         # Fixed effects model
         fe_mod = PanelOLS(
             dependent=y, exog=x,
             entity_effects=True,
             check_rank=False,
         )
-        fe_res = fe_mod.fit()
+        try:
+            fe_res = fe_mod.fit()
+        except (ZeroDivisionError, np.linalg.LinAlgError):
+            rows.append({
+                "outcome": outcome_col,
+                "chi2_stat": np.nan,
+                "p_value": np.nan,
+                "df": 0,
+                "preferred_model": "fit_failed",
+            })
+            continue
 
         # Random effects model
         re_mod = RandomEffects(dependent=y, exog=x, check_rank=False)
-        re_res = re_mod.fit()
+        try:
+            re_res = re_mod.fit()
+        except (ZeroDivisionError, np.linalg.LinAlgError):
+            rows.append({
+                "outcome": outcome_col,
+                "chi2_stat": np.nan,
+                "p_value": np.nan,
+                "df": 0,
+                "preferred_model": "fit_failed",
+            })
+            continue
 
         # Hausman test statistic
         b_fe = fe_res.params.values

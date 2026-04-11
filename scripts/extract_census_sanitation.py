@@ -62,12 +62,12 @@ except ImportError:
 TABLE_SANITATION = "6805"   # Esgotamento sanitario
 TABLE_WATER = "6803"        # Abastecimento de agua
 
-# Variable: percentage of households
+# Variable: percentage of permanent occupied households
 VAR_PCT = "1000381"
 
 # Classification codes for "adequate" categories
 CLASS_SANITATION_ADEQUATE = "46290"  # Rede geral, pluvial, ou fossa ligada
-CLASS_WATER_ADEQUATE = "46281"       # Rede geral de distribuicao
+CLASS_WATER_ADEQUATE = "72144"       # Possui ligação à rede geral e a utiliza como forma principal
 
 CENSUS_YEAR = 2022
 
@@ -148,7 +148,7 @@ def fetch_sanitation() -> pd.DataFrame:
         ibge_territorial_code="all",
         period="2022",
         variable=VAR_PCT,
-        classifications={"c11558": CLASS_SANITATION_ADEQUATE},
+        classifications={"11558": CLASS_SANITATION_ADEQUATE},
     )
 
     # Skip first row (metadata header -- Pitfall 6)
@@ -194,7 +194,7 @@ def fetch_water_supply() -> pd.DataFrame:
         ibge_territorial_code="all",
         period="2022",
         variable=VAR_PCT,
-        classifications={"c11556": CLASS_WATER_ADEQUATE},
+        classifications={"1821": CLASS_WATER_ADEQUATE},
     )
 
     # Skip first row (metadata header -- Pitfall 6)
