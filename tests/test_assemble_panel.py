@@ -190,3 +190,132 @@ class TestLoadSource:
         )
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 0
+
+
+# ---------------------------------------------------------------------------
+# Test: cnes_professionals aggregation
+# ---------------------------------------------------------------------------
+
+class TestCnesProfessionalsAggregation:
+    """Tests for per-professional -> per-municipality-year aggregation."""
+
+    @pytest.fixture
+    def professionals_parquet(self, tmp_path):
+        """Create a mock professionals parquet with per-professional rows."""
+        df = pd.DataFrame({
+            "cnes": ["C001", "C001", "C002", "C003", "C003", "C003"],
+            "cod_ibge": ["1100015", "1100015", "1100015", "1100023", "1100023", "1100023"],
+            "year": [2022, 2022, 2022, 2022, 2022, 2022],
+            "cbo": ["225225", "225151", "225250", "225225", "225225", "225151"],
+            "cns_prof": ["PROF001", "PROF002", "PROF003", "PROF004", "PROF005", "PROF006"],
+            "sao_category": ["surgeon", "anesthesiologist", "obstetrician", "surgeon", "surgeon", "anesthesiologist"],
+        })
+        path = tmp_path / "professionals.parquet"
+        df.to_parquet(path, index=False)
+        return path
+
+    @pytest.fixture
+    def professionals_parquet_with_dupes(self, tmp_path):
+        """Professionals parquet where one professional appears in two facilities."""
+        df = pd.DataFrame({
+            "cnes": ["C001", "C002", "C001"],  # PROF001 at two facilities
+            "cod_ibge": ["1100015", "1100015", "1100015"],
+            "year": [2022, 2022, 2022],
+            "cbo": ["225225", "225151", "225225"],
+            "cns_prof": ["PROF001", "PROF002", "PROF001"],  # PROF001 duplicated
+            "sao_category": ["surgeon", "anesthesiologist", "surgeon"],
+        })
+        path = tmp_path / "professionals_dupes.parquet"
+        df.to_parquet(path, index=False)
+        return path
+
+    @patch("database.assemble_panel.apply_amc_crosswalk", side_effect=lambda df, year, **kw: df)
+    @patch("database.assemble_panel.rename_municipality_column", side_effect=lambda df: df)
+    @patch("database.assemble_panel.map_6digit_to_7digit", side_effect=lambda s: s)
+    def test_aggregates_to_one_row_per_municipality_year(
+        self, mock_map, mock_rename, mock_xwalk, professionals_parquet
+    ):
+        """cnes_professionals should produce exactly one row per (cod_ibge, year)."""
+        from database.assemble_panel import load_source
+
+        result = load_source(
+            name="cnes_professionals",
+            path=professionals_parquet,
+            years=[2022],
+            is_crosssectional=True,
+        )
+
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) > 0
+        # No duplicate (cod_ibge, year) pairs
+        dupes = result.duplicated(subset=["cod_ibge", "year"])
+        assert dupes.sum() == 0, "Duplicate (cod_ibge, year) found after aggregation"
+
+    @patch("database.assemble_panel.apply_amc_crosswalk", side_effect=lambda df, year, **kw: df)
+    @patch("database.assemble_panel.rename_municipality_column", side_effect=lambda df: df)
+    @patch("database.assemble_panel.map_6digit_to_7digit", side_effect=lambda s: s)
+    def test_sao_count_column_present(
+        self, mock_map, mock_rename, mock_xwalk, professionals_parquet
+    ):
+        """Result must include sao_count and per-category columns."""
+        from database.assemble_panel import load_source
+
+        result = load_source(
+            name="cnes_professionals",
+            path=professionals_parquet,
+            years=[2022],
+            is_crosssectional=True,
+        )
+
+        for col in ["sao_count", "n_surgeons", "n_anesthesiologists", "n_obstetricians"]:
+            assert col in result.columns, f"Expected column '{col}' missing from result"
+
+    @patch("database.assemble_panel.apply_amc_crosswalk", side_effect=lambda df, year, **kw: df)
+    @patch("database.assemble_panel.rename_municipality_column", side_effect=lambda df: df)
+    @patch("database.assemble_panel.map_6digit_to_7digit", side_effect=lambda s: s)
+    def test_correct_counts(
+        self, mock_map, mock_rename, mock_xwalk, professionals_parquet
+    ):
+        """Counts should match the fixture data (2 munis, correct per-category)."""
+        from database.assemble_panel import load_source
+
+        result = load_source(
+            name="cnes_professionals",
+            path=professionals_parquet,
+            years=[2022],
+            is_crosssectional=True,
+        )
+
+        row_1100015 = result[result["cod_ibge"] == "1100015"].iloc[0]
+        assert row_1100015["sao_count"] == 3
+        assert row_1100015["n_surgeons"] == 1
+        assert row_1100015["n_anesthesiologists"] == 1
+        assert row_1100015["n_obstetricians"] == 1
+
+        row_1100023 = result[result["cod_ibge"] == "1100023"].iloc[0]
+        assert row_1100023["sao_count"] == 3
+        assert row_1100023["n_surgeons"] == 2
+        assert row_1100023["n_anesthesiologists"] == 1
+        assert row_1100023["n_obstetricians"] == 0
+
+    @patch("database.assemble_panel.apply_amc_crosswalk", side_effect=lambda df, year, **kw: df)
+    @patch("database.assemble_panel.rename_municipality_column", side_effect=lambda df: df)
+    @patch("database.assemble_panel.map_6digit_to_7digit", side_effect=lambda s: s)
+    def test_deduplicates_professionals_across_facilities(
+        self, mock_map, mock_rename, mock_xwalk, professionals_parquet_with_dupes
+    ):
+        """A professional appearing in 2 facilities should be counted only once."""
+        from database.assemble_panel import load_source
+
+        result = load_source(
+            name="cnes_professionals",
+            path=professionals_parquet_with_dupes,
+            years=[2022],
+            is_crosssectional=True,
+        )
+
+        row = result[result["cod_ibge"] == "1100015"].iloc[0]
+        # PROF001 (surgeon) appears at C001 and C002 -- should count as 1 surgeon
+        assert row["sao_count"] == 2, f"Expected 2 unique professionals, got {row['sao_count']}"
+        assert row["n_surgeons"] == 1, f"Expected 1 unique surgeon, got {row['n_surgeons']}"
+        assert row["n_anesthesiologists"] == 1
