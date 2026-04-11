@@ -180,6 +180,12 @@
       "type": "directory"
     },
     {
+      "path": "database/utils.py",
+      "accessCount": 20,
+      "lastAccessed": 1775871946569,
+      "type": "file"
+    },
+    {
       "path": ".planning/REQUIREMENTS.md",
       "accessCount": 18,
       "lastAccessed": 1775549487608,
@@ -195,12 +201,6 @@
       "path": ".planning/PROJECT.md",
       "accessCount": 17,
       "lastAccessed": 1775862737987,
-      "type": "file"
-    },
-    {
-      "path": "database/utils.py",
-      "accessCount": 17,
-      "lastAccessed": 1775867977788,
       "type": "file"
     },
     {
@@ -222,6 +222,12 @@
       "type": "file"
     },
     {
+      "path": "config.yaml",
+      "accessCount": 10,
+      "lastAccessed": 1775872131182,
+      "type": "file"
+    },
+    {
       "path": ".planning/research/STACK.md",
       "accessCount": 9,
       "lastAccessed": 1775083150637,
@@ -231,12 +237,6 @@
       "path": ".planning/research/PITFALLS.md",
       "accessCount": 9,
       "lastAccessed": 1775083159295,
-      "type": "file"
-    },
-    {
-      "path": "config.yaml",
-      "accessCount": 9,
-      "lastAccessed": 1775870667523,
       "type": "file"
     },
     {
@@ -361,8 +361,8 @@
     },
     {
       "path": "scripts/download_ans.py",
-      "accessCount": 3,
-      "lastAccessed": 1775077786478,
+      "accessCount": 4,
+      "lastAccessed": 1775871933421,
       "type": "file"
     },
     {
