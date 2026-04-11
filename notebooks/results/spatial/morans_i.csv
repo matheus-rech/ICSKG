@@ -1,7 +1,2 @@
 outcome,morans_i,p_value,z_score,n_obs,interpretation
-lcogs1_distance_km,-0.01347008372144748,0.046,-1.6162977111501269,5570,negative spatial autocorrelation
-sao_per_100k,0.18584367317263545,0.001,22.880548118877964,5570,positive spatial autocorrelation
-surgical_volume_per_100k,0.06360177276149244,0.001,4.7562490756689355,3126,positive spatial autocorrelation
-pomr,0.11458480380579657,0.001,8.734015414338758,3108,positive spatial autocorrelation
-financial_risk_ratio,0.04568677583291051,0.007,3.8005228925300627,3126,positive spatial autocorrelation
-catastrophic_expenditure,0.0342129134150717,0.011,2.6787437094863242,3126,positive spatial autocorrelation
+lcogs1_distance_km,-0.08363484414600213,0.001,-9.838233708974297,5570,negative spatial autocorrelation

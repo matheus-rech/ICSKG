@@ -1,18 +1,18 @@
-# Spearman Correlation Matrix — Dimensions × LCoGS (2021)
+# Spearman Correlation Matrix — Dimensions × LCoGS (2023)
 
-*Generated: 2026-04-10 23:40*
+*Generated: 2026-04-11 02:16*
 
 |            |   D1 Gov. |   D2 Econ. |   D3 HumCap |   D4 SocCoh |   D5 Envir. |   D7 UrbPlan |   L1 Dist |   L2 SAO |   L3 SurgVol |   L4 POMR |   L5 FinRisk |   L6 CatExp |
 |:-----------|----------:|-----------:|------------:|------------:|------------:|-------------:|----------:|---------:|-------------:|----------:|-------------:|------------:|
-| D1 Gov.    |     1     |      0.679 |       0.662 |       0.561 |       0.253 |       -0.024 |     0.077 |    0.411 |        0.267 |     0.298 |       -0.448 |      -0.06  |
-| D2 Econ.   |     0.679 |      1     |       0.729 |       0.66  |       0.22  |       -0.039 |     0.059 |    0.445 |        0.293 |     0.327 |       -0.67  |      -0.09  |
-| D3 HumCap  |     0.662 |      0.729 |       1     |       0.814 |       0.477 |       -0.039 |    -0.024 |    0.586 |        0.355 |     0.51  |       -0.312 |       0.016 |
-| D4 SocCoh  |     0.561 |      0.66  |       0.814 |       1     |       0.549 |       -0.035 |    -0.045 |    0.545 |        0.263 |     0.488 |       -0.291 |       0.033 |
-| D5 Envir.  |     0.253 |      0.22  |       0.477 |       0.549 |       1     |       -0.009 |    -0.142 |    0.422 |        0.146 |     0.489 |        0.014 |       0.042 |
-| D7 UrbPlan |    -0.024 |     -0.039 |      -0.039 |      -0.035 |      -0.009 |        1     |    -0.211 |   -0.009 |       -0.044 |    -0.012 |        0.006 |       0.004 |
-| L1 Dist    |     0.077 |      0.059 |      -0.024 |      -0.045 |      -0.142 |       -0.211 |     1     |   -0.052 |        0.058 |    -0.106 |       -0.103 |      -0.041 |
-| L2 SAO     |     0.411 |      0.445 |       0.586 |       0.545 |       0.422 |       -0.009 |    -0.052 |    1     |        0.573 |     0.431 |       -0.1   |       0.092 |
-| L3 SurgVol |     0.267 |      0.293 |       0.355 |       0.263 |       0.146 |       -0.044 |     0.058 |    0.573 |        1     |     0.138 |        0.021 |       0.059 |
-| L4 POMR    |     0.298 |      0.327 |       0.51  |       0.488 |       0.489 |       -0.012 |    -0.106 |    0.431 |        0.138 |     1     |        0.092 |       0.168 |
-| L5 FinRisk |    -0.448 |     -0.67  |      -0.312 |      -0.291 |       0.014 |        0.006 |    -0.103 |   -0.1   |        0.021 |     0.092 |        1     |       0.306 |
-| L6 CatExp  |    -0.06  |     -0.09  |       0.016 |       0.033 |       0.042 |        0.004 |    -0.041 |    0.092 |        0.059 |     0.168 |        0.306 |       1     |
+| D1 Gov.    |     1     |        nan |       0.595 |         nan |       0.203 |          nan |     0.079 |      nan |          nan |       nan |          nan |         nan |
+| D2 Econ.   |   nan     |        nan |     nan     |         nan |     nan     |          nan |   nan     |      nan |          nan |       nan |          nan |         nan |
+| D3 HumCap  |     0.595 |        nan |       1     |         nan |       0.477 |          nan |    -0.024 |      nan |          nan |       nan |          nan |         nan |
+| D4 SocCoh  |   nan     |        nan |     nan     |         nan |     nan     |          nan |   nan     |      nan |          nan |       nan |          nan |         nan |
+| D5 Envir.  |     0.203 |        nan |       0.477 |         nan |       1     |          nan |    -0.142 |      nan |          nan |       nan |          nan |         nan |
+| D7 UrbPlan |   nan     |        nan |     nan     |         nan |     nan     |          nan |   nan     |      nan |          nan |       nan |          nan |         nan |
+| L1 Dist    |     0.079 |        nan |      -0.024 |         nan |      -0.142 |          nan |     1     |      nan |          nan |       nan |          nan |         nan |
+| L2 SAO     |   nan     |        nan |     nan     |         nan |     nan     |          nan |   nan     |      nan |          nan |       nan |          nan |         nan |
+| L3 SurgVol |   nan     |        nan |     nan     |         nan |     nan     |          nan |   nan     |      nan |          nan |       nan |          nan |         nan |
+| L4 POMR    |   nan     |        nan |     nan     |         nan |     nan     |          nan |   nan     |      nan |          nan |       nan |          nan |         nan |
+| L5 FinRisk |   nan     |        nan |     nan     |         nan |     nan     |          nan |   nan     |      nan |          nan |       nan |          nan |         nan |
+| L6 CatExp  |   nan     |        nan |     nan     |         nan |     nan     |          nan |   nan     |      nan |          nan |       nan |          nan |         nan |

@@ -20,3 +20,5 @@ database/icskg_br.duckdb
 
 # OS
 .DS_Store
+# Shapefiles (download from IBGE)
+data_sources/shapefiles/

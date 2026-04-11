@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd \\\"/Users/matheusrech/untitled folder 6/ICSKG/notebooks\\\" && ../.venv/bin/jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=600 --output ICSKG_BR_submission_execute...",
-  "error": "Exit code 1\n[NbConvertApp] Converting notebook ICSKG_BR_submission.ipynb to notebook\nTraceback (most recent call last):\n  File \"/Users/matheusrech/untitled folder 6/ICSKG/notebooks/../.venv/bin/jupyter-nbconvert\", line 12, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"/Users/matheusrech/untitled folder 6/ICSKG/.venv/lib/python3.12/site-packages/jupyter_core/application.py\", line 284, in launch_instance\n    super().launch_instance(argv=argv, **kwargs)\n  File \"/Users/matheusrech/unt...",
-  "timestamp": "2026-04-11T02:06:21.566Z",
+  "tool_input_preview": "{\"command\":\"cd \\\"/Users/matheusrech/untitled folder 6/ICSKG\\\" && git push origin feature/phase-10-publication-package 2>&1\",\"timeout\":120000,\"description\":\"Push to remote\"}",
+  "error": "Exit code 1\nremote: error: Trace: 12dbc09d646cfb515dec2d3d18ed1a2e1d5d3125966100453a9997af30b2dbb6        \nremote: error: See https://gh.io/lfs for more information.        \nremote: error: File data_sources/shapefiles/BR_Municipios_2023.shp is 261.73 MB; this exceeds GitHub's file size limit of 100.00 MB        \nremote: error: GH001: Large files detected. You may want to try Git Large File Storage - https://git-lfs.github.com.        \nTo github.com:matheus-rech/ICSKG.git\n ! [remote rejected] fea...",
+  "timestamp": "2026-04-11T05:18:57.800Z",
   "retry_count": 1
 }

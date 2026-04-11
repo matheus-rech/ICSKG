@@ -1,7 +1,6 @@
 Outcome,Arith CUDS coef,p-value,R² (within)
-lcogs1_distance_km,-0.0000,0.3280,0.0000
-sao_per_100k,1.1243,0.2168,-0.0016
-surgical_volume_per_100k,927.3436,0.2128,-0.0023
-pomr,0.0203,0.0069,0.0098
-financial_risk_ratio,-0.0045,0.4295,-0.0003
-catastrophic_expenditure,0.0236,0.4628,0.0005
+lcogs1_distance_km,-0.0000,0.8336,0.0000
+surgical_volume_per_100k,2964.8801,0.0005,-0.0055
+pomr,0.0179,0.0159,0.0080
+financial_risk_ratio,-0.0071,0.2039,0.0002
+catastrophic_expenditure,0.0202,0.5350,0.0004
